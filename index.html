@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องเรียนครูนนท์</title>
+<link id="favicon" rel="icon" type="image/png" href="">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyB8_D2J3unQn3mIZO5RVNumRI9vkEiIBAs",
+  authDomain: "classroom-teacher-jasmine.firebaseapp.com",
+  projectId: "classroom-teacher-jasmine",
+  storageBucket: "classroom-teacher-jasmine.firebasestorage.app",
+  messagingSenderId: "287551234084",
+  appId: "1:287551234084:web:663c4220619b29ee8cb8b1"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app); const storage = getStorage(app);
+window._db=db; window._storage=storage;
+window._firestoreFns={doc,getDoc,setDoc,onSnapshot,updateDoc,increment,ref,uploadBytes,getDownloadURL};
+window._firebaseReady=true; window.dispatchEvent(new Event('firebaseReady'));
+</script>
+
+<!-- SheetJS for Excel export/import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- QRious for QR code generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chonburi&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Charm:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════
+   วรรณคดีไทยร่วมสมัย — CSS VARIABLES
+   ครีม กระดาษสา · ทองคำเปลว · คราม
+═══════════════════════════════════════ */
+:root {
+  --bg:          #f5efe1;   /* กระดาษสา */
+  --bg2:         #efe6d2;
+  --surface:     #fffdf7;
+  --surface2:    #f7f0e0;
+  --accent:      #2a3b6b;   /* คราม */
+  --accent2:     #c79a3c;   /* ทอง */
+  --accent3:     #8c2f2f;   /* ครั่ง / แดงชาด */
+  --gold:        #c79a3c;
+  --gold-light:  #e3c570;
+  --accent-soft: rgba(42,59,107,0.07);
+  --gold-soft:   rgba(199,154,60,0.12);
+  --text:        #2b2419;
+  --text-mid:    #5a5040;
+  --text-muted:  #9c917c;
+  --border:      #e0d4ba;
+  --border-focus:#c79a3c;
+  --radius:      18px;
+  --radius-sm:   12px;
+  --sh-sm:       0 2px 10px rgba(80,60,20,0.06);
+  --sh:          0 8px 28px rgba(80,60,20,0.10);
+  --sh-lg:       0 18px 52px rgba(80,60,20,0.16);
+  --sh-ac:       0 6px 26px rgba(42,59,107,0.22);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--content-font,'Sarabun'),'Sarabun',sans-serif; font-weight:400;
+  min-height:100vh; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ═══════════════════════════════════════
+   พื้นหลัง — กระดาษสา + ลายไทยจาง
+═══════════════════════════════════════ */
+.paper-bg {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(199,154,60,0.10), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 100% 100%, rgba(42,59,107,0.07), transparent 70%),
+    linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
+}
+/* เนื้อกระดาษ (fiber grain) */
+.paper-bg::before {
+  content:''; position:absolute; inset:0; opacity:0.5;
+  background-image:
+    radial-gradient(circle at 25% 15%, rgba(120,90,40,0.04) 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 65%, rgba(120,90,40,0.035) 0.5px, transparent 1px),
+    radial-gradient(circle at 50% 85%, rgba(80,60,30,0.03) 0.5px, transparent 1px);
+  background-size: 7px 7px, 11px 11px, 13px 13px;
+}
+/* ภาพพื้นหลังเต็มจอ (cover) — ปรับความจางได้ผ่าน --bg-img-op */
+.bg-cover {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  opacity:0; transition:opacity 0.5s ease;
+}
+.bg-cover.on { opacity:var(--bg-img-op, 0.35); }
+
+/* ดอกไม้ไทยลอย (thaiflower.png หลายดอก) */
+.flower-field {
+  position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+}
+.flower {
+  position:absolute; display:block;
+  background-image:url("https://nonthaphathr.github.io/uploadimg/thaiflower.png");
+  background-size:contain; background-repeat:no-repeat; background-position:center;
+  opacity:0.12; will-change:transform;
+}
+@keyframes flFloat {
+  0%   { transform:translateY(0) rotate(0deg); }
+  50%  { transform:translateY(-26px) rotate(18deg); }
+  100% { transform:translateY(0) rotate(0deg); }
+}
+@keyframes flFloat2 {
+  0%   { transform:translate(0,0) rotate(0deg); }
+  50%  { transform:translate(14px,-34px) rotate(-20deg); }
+  100% { transform:translate(0,0) rotate(0deg); }
+}
+@keyframes flSpin {
+  0%   { transform:translateY(0) rotate(0deg) scale(1); }
+  50%  { transform:translateY(-20px) rotate(180deg) scale(1.08); }
+  100% { transform:translateY(0) rotate(360deg) scale(1); }
+}
+
+/* ─── Floating lights (ลูกแสงลอย เห็นการเคลื่อนไหวชัด · สีตามธีม) ─── */
+.lights-field { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.light-orb {
+  position:absolute; border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,
+    var(--orb-color, var(--gold)) 0%,
+    var(--orb-color, var(--gold)) 18%,
+    color-mix(in srgb, var(--orb-color, var(--gold)) 55%, transparent) 42%,
+    transparent 72%);
+  filter:blur(0.5px);
+  opacity:0; mix-blend-mode:screen; will-change:transform,opacity;
+}
+@keyframes orbRise {
+  0%   { transform:translate(0,0) scale(0.7); opacity:0; }
+  12%  { opacity:var(--orb-op,0.85); }
+  50%  { transform:translate(var(--drift,18px), -52vh) scale(1); opacity:var(--orb-op,0.85); }
+  88%  { opacity:var(--orb-op,0.85); }
+  100% { transform:translate(calc(var(--drift,18px) * -0.6), -104vh) scale(0.8); opacity:0; }
+}
+@keyframes orbPulse {
+  0%,100% { box-shadow:0 0 var(--glow,22px) 2px color-mix(in srgb, var(--orb-color, var(--gold)) 60%, transparent); }
+  50%     { box-shadow:0 0 calc(var(--glow,22px) * 1.7) 5px color-mix(in srgb, var(--orb-color, var(--gold)) 80%, transparent); }
+}
+
+/* ─── Light sweep (แสงปาดจาง ๆ ช้า ๆ เฉียงทั้งหน้าจอ) ─── */
+.light-sweep { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.light-sweep::before {
+  content:''; position:absolute; top:-70%; left:-50%;
+  width:75%; height:240%;
+  background:linear-gradient(105deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent2, #c79a3c) 45%, transparent) 34%,
+    color-mix(in srgb, var(--accent2, #c79a3c) 85%, transparent) 50%,
+    color-mix(in srgb, var(--accent2, #c79a3c) 45%, transparent) 66%,
+    transparent 100%);
+  filter:blur(22px);
+  transform:rotate(8deg);
+  animation:lightSweep 14s ease-in-out infinite;
+}
+@keyframes lightSweep {
+  0%   { transform:translateX(-40vw) rotate(8deg); opacity:0; }
+  15%  { opacity:0.95; }
+  50%  { opacity:1; }
+  85%  { opacity:0.95; }
+  100% { transform:translateX(150vw) rotate(8deg); opacity:0; }
+}
+@media (prefers-reduced-motion: reduce){
+  .light-orb{ animation:none !important; opacity:0.5 !important; }
+  .light-sweep::before{ animation:none; opacity:0.35; }
+}
+
+/* เส้นขอบลายทองด้านบน-ล่าง */
+.gold-edge-top, .gold-edge-bot {
+  position:fixed; left:0; right:0; height:5px; z-index:1; pointer-events:none;
+  background:linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%, transparent);
+  opacity:0.55;
+}
+.gold-edge-top{ top:0; } .gold-edge-bot{ bottom:0; }
+
+@keyframes floatUp { from{transform:translateY(0) scale(1);} to{transform:translateY(-34px) scale(1.08);} }
+
+/* ═══════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════ */
+nav {
+  position:fixed; top:5px; left:0; right:0; z-index:200;
+  display:flex; align-items:center; justify-content:center;
+  padding:14px 24px;
+  background:rgba(245,239,225,0.72);
+  backdrop-filter:blur(26px) saturate(1.4);
+  border-bottom:1px solid rgba(224,212,186,0.7);
+}
+.nav-pill {
+  display:flex; gap:3px;
+  background:rgba(255,253,247,0.92); padding:4px;
+  border-radius:15px; box-shadow:var(--sh-sm);
+  border:1px solid var(--border);
+}
+.t-btn {
+  font-family:'Sarabun',sans-serif; font-size:14px; font-weight:600;
+  padding:9px 26px; border:none; border-radius:12px; cursor:pointer;
+  color:var(--text-muted); background:transparent;
+  transition:all 0.3s cubic-bezier(.22,.68,0,1.2);
+  position:relative; overflow:hidden;
+}
+.t-btn::before {
+  content:''; position:absolute; inset:0; border-radius:12px;
+  background:linear-gradient(135deg, var(--accent), #3a4f8a);
+  opacity:0; transition:opacity 0.3s;
+}
+.t-btn span { position:relative; z-index:1; }
+.t-btn:hover { color:var(--accent); }
+.t-btn.active { color:#fff; box-shadow:var(--sh-ac); }
+.t-btn.active::before { opacity:1; }
+.t-btn.active:hover { transform:translateY(-1px); }
+
+/* ═══════════════════════════════════════
+   PAGES
+═══════════════════════════════════════ */
+.page { display:none; min-height:100vh; padding:90px 20px 70px; position:relative; z-index:2; }
+.page.active { display:flex; flex-direction:column; align-items:center; }
+
+/* ═══════════════════════════════════════
+   PUBLIC PAGE
+═══════════════════════════════════════ */
+#page-public { padding-top:104px; }
+.pub-wrap { width:100%; max-width:540px; display:flex; flex-direction:column; align-items:center; }
+
+/* การ์ดวรรณคดี (ขอบลายทอง) */
+.scroll-card {
+  width:100%;
+  background:linear-gradient(180deg, var(--surface), var(--surface2));
+  border:1.5px solid var(--border);
+  border-radius:24px;
+  box-shadow:var(--sh-lg);
+  padding:38px 30px 32px;
+  position:relative; overflow:hidden;
+  animation: riseIn 0.8s cubic-bezier(.22,.68,0,1.2) both;
+}
+.scroll-card::before {
+  content:''; position:absolute; inset:7px; border-radius:18px;
+  border:1px solid rgba(199,154,60,0.30);
+  pointer-events:none;
+}
+/* มุมลายทอง */
+.corner {
+  position:absolute; width:34px; height:34px; opacity:0.55; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M2 38 V14 C2 8 8 2 14 2 H38' fill='none' stroke='%23c79a3c' stroke-width='2'/%3E%3Cpath d='M10 38 C10 24 24 10 38 10' fill='none' stroke='%23c79a3c' stroke-width='1.2'/%3E%3Ccircle cx='14' cy='14' r='2.5' fill='%23c79a3c'/%3E%3C/svg%3E");
+  background-size:contain; background-repeat:no-repeat;
+}
+.corner.tl{ top:12px; left:12px; }
+.corner.tr{ top:12px; right:12px; transform:scaleX(-1); }
+.corner.bl{ bottom:12px; left:12px; transform:scaleY(-1); }
+.corner.br{ bottom:12px; right:12px; transform:scale(-1); }
+
+@keyframes riseIn {
+  from { opacity:0; transform:translateY(26px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.profile-block {
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  margin-bottom:22px; position:relative; z-index:1;
+}
+
+/* Avatar — กรอบลายดอกบัว */
+.avatar-wrap { position:relative; width:116px; height:116px; }
+.av-glow {
+  position:absolute; inset:-12px; border-radius:50%;
+  background: conic-gradient(from 0deg, var(--gold), var(--accent2), var(--gold-light), var(--gold));
+  animation: conicSpin 8s linear infinite;
+  filter:blur(5px); opacity:0.40;
+}
+@keyframes conicSpin { to { transform:rotate(360deg); } }
+.av-ring {
+  position:absolute; inset:-5px; border-radius:50%;
+  background: conic-gradient(from 0deg, var(--gold), var(--gold-light), var(--accent), var(--gold));
+  animation: conicSpin 8s linear infinite;
+  padding:2.5px;
+}
+.av-ring-inner { width:100%; height:100%; border-radius:50%; background:var(--surface); }
+.avatar-img, .avatar-ph {
+  width:116px; height:116px; border-radius:50%;
+  border:4px solid var(--surface);
+  box-shadow:var(--sh);
+  object-fit:cover;
+  background:linear-gradient(135deg, #f3ebd6, #e8dcc0);
+  display:flex; align-items:center; justify-content:center;
+  font-size:42px; color:var(--accent); position:relative; z-index:1;
+}
+
+.pub-name {
+  font-family:var(--title-font,'Chonburi'),'Chonburi','Sarabun',serif;
+  font-size:clamp(26px,6.5vw,40px); font-weight:400;
+  text-align:center; line-height:1.25;
+  color:var(--accent);
+  letter-spacing:0.5px;
+  text-shadow:0 1px 0 rgba(199,154,60,0.20);
+}
+/* ─── ชื่อห้องเรียน: ไล่สีไหลลื่น (CSS animation + JS smooth flow) ─── */
+.pub-name.grad-anim {
+  background-image: linear-gradient(
+    100deg,
+    var(--accent) 0%,
+    var(--gold) 25%,
+    var(--accent) 50%,
+    var(--gold) 75%,
+    var(--accent) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  background-position: 0% 50%;
+  animation: pubNameFlow 7s ease-in-out infinite;
+}
+@keyframes pubNameFlow {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+@media (prefers-reduced-motion: reduce){
+  .pub-name.grad-anim{ animation:none; background-position:50% 50%; }
+}
+.font-prev{ font-size:20px; line-height:1.4; color:var(--accent); word-break:break-word; }
+
+/* ─── ป๊อปอัปประกาศ (เด้งเมื่อเปิดเว็บ) ─── */
+.ann-modal-box{ text-align:center; max-width:440px; }
+.ann-modal-icon{ font-size:40px; line-height:1; margin-bottom:6px; animation:annBell 2.2s ease-in-out infinite; transform-origin:50% 0; }
+@keyframes annBell{ 0%,60%,100%{transform:rotate(0)} 70%{transform:rotate(11deg)} 80%{transform:rotate(-9deg)} 90%{transform:rotate(5deg)} }
+.ann-modal-list{ text-align:left; margin:16px 0 6px; max-height:46vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+.ann-modal-item{ display:flex; gap:10px; align-items:flex-start; padding:13px 15px; border-radius:14px;
+  background:var(--gold-soft); border:1px solid var(--border); }
+.ann-modal-item .am-dot{ flex:none; width:8px; height:8px; border-radius:50%; margin-top:7px;
+  background:var(--gold); box-shadow:0 0 0 4px var(--gold-soft); }
+.ann-modal-item .am-txt{ font-size:14.5px; line-height:1.7; color:var(--text-mid);
+  font-family:var(--content-font,'Sarabun'),'Sarabun',sans-serif; white-space:pre-wrap; word-break:break-word; }
+.ann-modal-ok{ margin-top:14px; min-width:130px; }
+@media (prefers-reduced-motion: reduce){ .ann-modal-icon{ animation:none; } }
+
+/* ─── Crop รูปประจำตัว ─── */
+.crop-stage{ position:relative; width:100%; max-width:380px; margin:14px auto 4px; background:#1a1a1a;
+  border-radius:14px; overflow:hidden; user-select:none; touch-action:none; line-height:0; }
+.crop-stage img{ width:100%; display:block; pointer-events:none; -webkit-user-drag:none; }
+.crop-box{ position:absolute; border:2px solid #fff; box-shadow:0 0 0 100vmax rgba(0,0,0,0.5); cursor:move;
+  box-sizing:border-box; }
+.crop-box::before{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 33.33% 0/1px 100% no-repeat,
+    linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 66.66% 0/1px 100% no-repeat,
+    linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 0 33.33%/100% 1px no-repeat,
+    linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 0 66.66%/100% 1px no-repeat; }
+.crop-h{ position:absolute; width:16px; height:16px; background:#fff; border:2px solid var(--accent,#2a3b6b);
+  border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,.4); }
+.crop-h.tl{ top:-9px; left:-9px; cursor:nwse-resize; }
+.crop-h.tr{ top:-9px; right:-9px; cursor:nesw-resize; }
+.crop-h.bl{ bottom:-9px; left:-9px; cursor:nesw-resize; }
+.crop-h.br{ bottom:-9px; right:-9px; cursor:nwse-resize; }
+.crop-tools{ display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.crop-lock-on{ background:var(--gold-soft)!important; border-color:var(--gold)!important; }
+.pub-sub {
+  font-size:15.5px; color:var(--text-mid); text-align:center;
+  line-height:1.85; font-weight:400; max-width:400px;
+  font-family:'Charm','Sarabun',cursive;
+}
+
+/* คั่นลายไทย */
+.rule {
+  position:relative; width:100%; max-width:240px; height:30px;
+  margin:4px auto 22px;
+  display:flex; align-items:center; justify-content:center;
+}
+.rule::before, .rule::after {
+  content:''; flex:1; height:1.5px;
+  background:linear-gradient(90deg, transparent, var(--gold));
+}
+.rule::after { background:linear-gradient(90deg, var(--gold), transparent); }
+.rule-mark {
+  font-size:20px; color:var(--gold); margin:0 12px;
+  text-shadow:0 0 8px rgba(199,154,60,0.4);
+}
+
+/* ประกาศ */
+#pub-anns { width:100%; display:flex; flex-direction:column; gap:10px; margin-bottom:18px; position:relative; z-index:1; }
+.ann-pill {
+  display:flex; gap:12px; align-items:flex-start;
+  background:linear-gradient(135deg, var(--gold-soft), rgba(199,154,60,0.04));
+  border-radius:var(--radius-sm);
+  border:1px solid rgba(199,154,60,0.32);
+  padding:14px 16px; box-shadow:var(--sh-sm);
+  animation:riseIn 0.5s ease both;
+  position:relative; overflow:hidden;
+}
+.ann-pill::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3.5px;
+  background:linear-gradient(180deg, var(--gold), var(--accent3));
+  border-radius:0 2px 2px 0;
+}
+.ann-icon {
+  width:34px; height:34px; border-radius:10px; flex-shrink:0;
+  background:rgba(199,154,60,0.18);
+  display:flex; align-items:center; justify-content:center; font-size:15px;
+}
+.ann-tag {
+  font-size:10px; font-weight:700; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--accent3); margin-bottom:3px;
+  font-family:'Sarabun',sans-serif;
+}
+.ann-msg { font-size:14.5px; color:var(--text-mid); line-height:1.7; font-weight:400; }
+
+/* ═══════════════════════════════════════
+   ปุ่มลิงก์
+═══════════════════════════════════════ */
+.links-wrap { width:100%; display:flex; flex-direction:column; gap:12px; position:relative; z-index:1; }
+
+.lk {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:17px 20px; border-radius:var(--radius);
+  background:var(--surface); border:1.5px solid var(--border);
+  text-decoration:none; color:var(--text);
+  box-shadow:var(--sh-sm);
+  transition:all 0.32s cubic-bezier(.22,.68,0,1.2);
+  position:relative; overflow:hidden;
+  animation:riseIn 0.6s cubic-bezier(.22,.68,0,1.2) both;
+}
+button.lk { width:100%; font:inherit; cursor:pointer; text-align:left; }
+.lk-arr-copy { font-size:14px; }
+.lk:hover .lk-arr-copy span { transform:scale(1.12); }
+.lk::before {
+  content:'';
+  position:absolute; top:0; left:-100%; width:55%; height:100%;
+  background:linear-gradient(90deg, transparent, rgba(199,154,60,0.16), transparent);
+  transform:skewX(-20deg);
+}
+.lk:hover::before { animation:sweepShimmer 0.6s ease forwards; }
+@keyframes sweepShimmer { from{left:-100%;} to{left:170%;} }
+.lk::after {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:linear-gradient(180deg, var(--accent), var(--gold), var(--accent3));
+  transform:scaleY(0); transform-origin:center;
+  transition:transform 0.32s cubic-bezier(.22,.68,0,1.2);
+  border-radius:0 3px 3px 0;
+}
+.lk:hover {
+  transform:translateY(-3px);
+  box-shadow:var(--sh), 0 0 0 1px rgba(199,154,60,0.3);
+  border-color:rgba(199,154,60,0.5);
+  color:var(--accent);
+}
+.lk:hover::after { transform:scaleY(1); }
+.lk:active { transform:translateY(-1px); }
+
+.lk-left { display:flex; align-items:center; gap:13px; flex:1; min-width:0; }
+.lk-thumb {
+  width:46px; height:46px; border-radius:11px; flex-shrink:0;
+  object-fit:cover; border:1.5px solid var(--border);
+  transition:transform 0.3s cubic-bezier(.22,.68,0,1.2), border-color 0.3s;
+}
+.lk:hover .lk-thumb { transform:scale(1.08); border-color:var(--gold); }
+.lk-textwrap { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.lk-label {
+  font-size:15.5px; font-weight:600; letter-spacing:0.2px;
+  position:relative; z-index:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.lk-clicks {
+  font-size:11px; color:var(--text-muted); font-weight:400;
+  display:flex; align-items:center; gap:4px;
+}
+.lk-arr {
+  width:36px; height:36px; border-radius:11px; flex-shrink:0;
+  background:var(--surface2); border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; transition:all 0.3s cubic-bezier(.22,.68,0,1.2);
+  position:relative; z-index:1; overflow:hidden;
+}
+.lk-arr::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, var(--accent), var(--gold));
+  opacity:0; transition:opacity 0.3s;
+}
+.lk-arr span { position:relative; z-index:1; transition:transform 0.3s; }
+.lk:hover .lk-arr { border-color:transparent; box-shadow:0 2px 12px rgba(42,59,107,0.3); color:#fff; }
+.lk:hover .lk-arr::before { opacity:1; }
+.lk:hover .lk-arr span { transform:translateX(2px); }
+
+/* แถวเครื่องมือสาธารณะ (แชร์) */
+.pub-tools { display:flex; gap:10px; justify-content:center; margin-top:24px; position:relative; z-index:1; }
+.pub-tool-btn {
+  display:flex; align-items:center; gap:7px;
+  padding:9px 18px; border-radius:24px; cursor:pointer;
+  border:1.5px solid var(--border); background:var(--surface);
+  font-size:13px; font-weight:600; color:var(--text-mid);
+  transition:all 0.25s; font-family:'Sarabun',sans-serif;
+  box-shadow:var(--sh-sm);
+}
+.pub-tool-btn:hover { border-color:var(--gold); color:var(--accent); transform:translateY(-2px); box-shadow:var(--sh); }
+.pub-tool-btn svg { width:17px; height:17px; flex:none; stroke:currentColor; }
+
+/* Footer */
+.pub-foot {
+  margin-top:30px; font-size:12.5px; color:var(--text-muted);
+  font-family:'Sarabun',sans-serif; font-weight:400;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  letter-spacing:0.5px; position:relative; z-index:2;
+}
+.sdot {
+  width:7px; height:7px; border-radius:50%; background:#5b8a3c;
+  box-shadow:0 0 8px rgba(91,138,60,0.6);
+  animation:pls 2.5s ease-in-out infinite;
+}
+@keyframes pls { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
+
+/* ═══════════════════════════════════════
+   QR MODAL
+═══════════════════════════════════════ */
+.modal-overlay {
+  position:fixed; inset:0; z-index:800;
+  background:rgba(43,36,25,0.55); backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center; padding:20px;
+  opacity:0; transition:opacity 0.3s;
+}
+.modal-overlay.show { display:flex; opacity:1; }
+.modal-box {
+  background:linear-gradient(180deg, var(--surface), var(--surface2));
+  border:1.5px solid var(--border); border-radius:24px;
+  padding:34px 30px; max-width:360px; width:100%; text-align:center;
+  box-shadow:var(--sh-lg); position:relative;
+  transform:scale(0.9); transition:transform 0.35s cubic-bezier(.22,.68,0,1.2);
+}
+.modal-overlay.show .modal-box { transform:scale(1); }
+.modal-box::before { content:''; position:absolute; inset:6px; border-radius:18px; border:1px solid rgba(199,154,60,0.3); pointer-events:none; }
+.modal-title { font-family:'Chonburi',serif; font-size:21px; color:var(--accent); margin-bottom:6px; }
+.modal-sub { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+.qr-canvas-wrap { display:inline-block; padding:14px; background:#fff; border-radius:16px; border:1.5px solid var(--border); box-shadow:var(--sh-sm); margin-bottom:18px; }
+.modal-close {
+  position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:50%;
+  border:1.5px solid var(--border); background:var(--surface); color:var(--text-muted);
+  cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; z-index:1;
+}
+.modal-close:hover { background:var(--accent3); color:#fff; border-color:var(--accent3); }
+/* ── Mini modal สำหรับคัดลอกข้อความ ── */
+#copy-modal .modal-box { max-width:440px; text-align:left; }
+.copy-modal-ta {
+  width:100%; box-sizing:border-box; min-height:130px; max-height:46vh; resize:vertical;
+  font-family:'Sarabun',sans-serif; font-size:14px; line-height:1.6;
+  padding:13px 15px; border:1.5px solid var(--border); border-radius:14px;
+  background:var(--surface2); color:var(--text); margin-bottom:14px;
+  white-space:pre-wrap;
+}
+.copy-modal-ta:focus { outline:none; border-color:var(--gold); }
+.copy-modal-actions { display:flex; gap:10px; }
+.copy-modal-actions .btn { flex:1; }
+
+/* ═══════════════════════════════════════
+   ADMIN PAGE
+═══════════════════════════════════════ */
+#page-admin { align-items:stretch; max-width:900px; margin:0 auto; width:100%; }
+#lock-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:72vh; width:100%; }
+.lock-box {
+  background:linear-gradient(180deg, var(--surface), var(--surface2));
+  border:1.5px solid var(--border); border-radius:26px; padding:46px 42px;
+  width:100%; max-width:410px; box-shadow:var(--sh-lg); text-align:center;
+  position:relative; overflow:hidden;
+  animation:riseIn 0.6s cubic-bezier(.22,.68,0,1.2) both;
+}
+.lock-box::before { content:''; position:absolute; inset:7px; border-radius:19px; border:1px solid rgba(199,154,60,0.3); pointer-events:none; }
+.lk-badge {
+  width:66px; height:66px; border-radius:20px; margin:0 auto 20px;
+  background:linear-gradient(135deg, var(--gold-soft), rgba(42,59,107,0.08));
+  border:1.5px solid rgba(199,154,60,0.3);
+  display:flex; align-items:center; justify-content:center; font-size:30px;
+  position:relative; z-index:1;
+}
+.lk-title { font-family:'Chonburi',serif; font-size:23px; color:var(--accent); margin-bottom:6px; position:relative; z-index:1; }
+.lk-sub { font-size:14px; color:var(--text-muted); margin-bottom:26px; font-weight:400; position:relative; z-index:1; }
+.lk-err { font-size:13px; color:var(--accent3); margin-top:12px; display:none; font-weight:600; position:relative; z-index:1; }
+
+#adm-panel { width:100%; }
+.adm-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; padding-bottom:20px; border-bottom:2px solid var(--border); }
+.adm-title { font-family:'Chonburi',serif; font-size:28px; color:var(--accent); }
+.adm-sub { font-size:13px; color:var(--text-muted); margin-top:4px; font-weight:400; }
+
+.adm-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+.ac {
+  background:linear-gradient(180deg, var(--surface), var(--surface2));
+  border-radius:var(--radius); border:1.5px solid var(--border); padding:24px;
+  box-shadow:var(--sh-sm); transition:box-shadow 0.2s, border-color 0.2s;
+  position:relative; overflow:hidden;
+}
+.ac:hover { border-color:rgba(199,154,60,0.4); box-shadow:var(--sh); }
+.ac::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--gold), var(--accent3));
+  opacity:0; transition:opacity 0.3s; border-radius:var(--radius) var(--radius) 0 0;
+}
+.ac:hover::before { opacity:1; }
+.ac.full { grid-column:1/-1; }
+
+.ac-title {
+  font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--accent); margin-bottom:20px; display:flex; align-items:center; gap:8px;
+  font-family:'Sarabun',sans-serif;
+}
+.ac-title::before {
+  content:''; width:7px; height:7px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), var(--accent3));
+  box-shadow:0 0 6px var(--gold); flex-shrink:0;
+}
+
+.fg { margin-bottom:16px; }
+.fl { display:block; font-size:13px; font-weight:600; color:var(--text-mid); margin-bottom:6px; font-family:'Sarabun',sans-serif; }
+input[type=text],input[type=url],input[type=password],textarea,select {
+  width:100%; background:var(--surface);
+  border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:10px 14px;
+  font-family:'Sarabun',sans-serif; font-size:14px; font-weight:400;
+  outline:none; transition:all 0.2s; line-height:1.6;
+}
+input:focus,textarea:focus,select:focus {
+  border-color:var(--border-focus); background:#fff;
+  box-shadow:0 0 0 4px rgba(199,154,60,0.14);
+}
+textarea { resize:vertical; min-height:78px; }
+select { cursor:pointer; }
+/* placeholder ให้จางและหายสนิทเมื่อมีค่าจริง (กันค้าง) */
+input::placeholder, textarea::placeholder { color:var(--text-muted); opacity:0.7; transition:opacity 0.15s; }
+input:not(:placeholder-shown)::placeholder, textarea:not(:placeholder-shown)::placeholder { opacity:0; }
+input:focus::placeholder, textarea:focus::placeholder { opacity:0.4; }
+/* contenteditable ที่ว่าง → แสดง placeholder จาก data-ph (หายเมื่อพิมพ์) */
+[contenteditable][data-ph]:empty:before { content:attr(data-ph); color:var(--text-muted); opacity:0.6; pointer-events:none; }
+
+/* BUTTONS */
+.btn {
+  font-family:'Sarabun',sans-serif; font-size:14px; font-weight:600;
+  padding:10px 22px; border:none; border-radius:var(--radius-sm);
+  cursor:pointer; transition:all 0.25s cubic-bezier(.22,.68,0,1.2);
+  display:inline-flex; align-items:center; gap:7px;
+  position:relative; overflow:hidden;
+}
+.btn::after {
+  content:''; position:absolute; width:100px; height:100px; border-radius:50%;
+  background:rgba(255,255,255,0.35); transform:scale(0) translate(-50%,-50%);
+  transform-origin:0 0; transition:transform 0.45s ease, opacity 0.45s ease;
+  opacity:0; pointer-events:none; left:50%; top:50%;
+}
+.btn:active::after { transform:scale(3.5) translate(-50%,-50%); opacity:0; transition:0s; }
+.btn-p { background:linear-gradient(135deg, var(--accent) 0%, #3a4f8a 100%); color:#fff; box-shadow:0 4px 16px rgba(42,59,107,0.26); }
+.btn-p:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(42,59,107,0.36); }
+.btn-p:active { transform:translateY(0); }
+.btn-p .btn-shine {
+  position:absolute; top:0; left:-100%; width:50%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent);
+  transform:skewX(-20deg); animation:btnShine 3.5s ease-in-out infinite;
+}
+@keyframes btnShine { 0%,100%{left:-100%;} 40%,60%{left:170%;} }
+.btn-o { background:transparent; border:1.5px solid var(--border); color:var(--text-mid); }
+.btn-o:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); transform:translateY(-1px); }
+.btn-g { background:transparent; border:none; color:var(--text-muted); padding:6px 11px; font-size:13px; border-radius:9px; }
+.btn-g:hover { color:var(--accent3); background:rgba(140,47,47,0.08); }
+.btn-full { width:100%; justify-content:center; }
+.btn-sm { padding:8px 18px; font-size:13px; }
+
+/* PRESET CHIPS */
+.chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.chip {
+  display:flex; align-items:center; gap:8px; padding:7px 14px;
+  border-radius:24px; cursor:pointer; border:1.5px solid var(--border);
+  background:var(--surface); font-size:13px; font-weight:600;
+  color:var(--text-mid); transition:all 0.22s; font-family:'Sarabun',sans-serif;
+}
+.chip:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); transform:translateY(-1px); }
+.chip.on { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); box-shadow:0 0 0 3px rgba(199,154,60,0.16); }
+.chip-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+
+.c-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.cpw { display:flex; align-items:center; gap:10px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; transition:border-color 0.2s; }
+.cpw:hover { border-color:var(--border-focus); }
+.cpw input[type=color] { width:28px; height:28px; border:none; background:none; padding:0; cursor:pointer; border-radius:6px; }
+.cpw span { font-size:12px; color:var(--text-muted); font-family:'Sarabun',sans-serif; font-weight:500; }
+
+/* LINK EDITOR ROWS */
+.le-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.lr {
+  display:flex; flex-direction:column; gap:8px;
+  background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 14px; transition:all 0.2s;
+}
+.lr:hover { border-color:rgba(199,154,60,0.4); box-shadow:var(--sh-sm); }
+.lr input { background:#fff; margin:0; }
+.lr-top-row { display:flex; align-items:center; gap:8px; }
+.lr-handle { display:flex; align-items:center; justify-content:center; cursor:grab; color:var(--text-muted); font-size:16px; user-select:none; touch-action:none; transition:color 0.2s; width:22px; }
+.lr-handle:active { cursor:grabbing; }
+.lr:hover .lr-handle { color:var(--gold); }
+.lr.drag-over { border-color:var(--gold); background:var(--gold-soft); box-shadow:var(--sh); }
+.lr.dragging { opacity:0.45; transform:scale(0.98); }
+.lr-num { flex:1; font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.5px; font-family:'Sarabun',sans-serif; }
+.lr-clickbadge { font-size:10.5px; color:var(--accent2); font-weight:700; background:var(--gold-soft); padding:2px 8px; border-radius:10px; white-space:nowrap; }
+.lr-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media(max-width:640px){ .lr-fields { grid-template-columns:1fr; } }
+.lr-del { width:34px; height:34px; border-radius:9px; background:transparent; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; transition:all 0.2s; flex-shrink:0; }
+.lr-del:hover { background:rgba(140,47,47,0.08); border-color:#d99; color:var(--accent3); transform:scale(1.1); }
+.lr-img-row { display:flex; align-items:center; gap:8px; margin-top:2px; }
+.lr-img-preview { width:36px; height:36px; border-radius:8px; object-fit:cover; border:1.5px solid var(--border); flex-shrink:0; display:none; }
+.lr-img-preview.has-img { display:block; }
+/* ── ช่องข้อความสำหรับคัดลอก (copy text) ── */
+.lr-copy-toggle {
+  display:flex; align-items:center; gap:6px; margin-top:6px;
+  background:transparent; border:1.5px dashed var(--border); border-radius:9px;
+  color:var(--text-muted); cursor:pointer; font-family:'Sarabun',sans-serif;
+  font-size:12.5px; font-weight:600; padding:7px 12px; transition:all 0.2s; width:100%;
+  justify-content:center;
+}
+.lr-copy-toggle:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); }
+.lr-copy-toggle.active { border-style:solid; border-color:var(--gold); color:var(--accent); background:var(--gold-soft); }
+.lr-copy-wrap { margin-top:6px; }
+.lr-copy-wrap.hidden { display:none; }
+.lr-copy-ta {
+  width:100%; min-height:74px; resize:vertical; box-sizing:border-box;
+  font-family:'Sarabun',sans-serif; font-size:13px; line-height:1.55;
+  padding:9px 11px; border:1.5px solid var(--border); border-radius:10px;
+  background:var(--surface); color:var(--text-mid); transition:border-color 0.2s;
+}
+.lr-copy-ta:focus { outline:none; border-color:var(--gold); }
+.lr-copy-hint { font-size:11px; color:var(--text-muted); margin-top:4px; padding-left:2px; }
+.add-lr {
+  width:100%; padding:11px; background:transparent;
+  border:2px dashed var(--border); border-radius:var(--radius-sm);
+  color:var(--text-muted); cursor:pointer; font-family:'Sarabun',sans-serif; font-size:14px; font-weight:600;
+  transition:all 0.22s; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.add-lr:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); transform:translateY(-1px); }
+
+/* LOGO UPLOAD */
+.logo-up { border:2px dashed var(--border); border-radius:var(--radius); padding:24px; text-align:center; cursor:pointer; position:relative; transition:all 0.22s; margin-bottom:14px; }
+.logo-up:hover { border-color:var(--gold); background:var(--gold-soft); transform:scale(1.01); }
+.logo-up input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.logo-prev { width:72px; height:72px; border-radius:50%; margin:0 auto 10px; object-fit:cover; border:2px solid var(--border); }
+.logo-hint-txt { font-size:13px; color:var(--text-muted); font-family:'Sarabun',sans-serif; font-weight:400; }
+
+/* ANNOUNCEMENTS ADMIN */
+.ann-adm-list { display:flex; flex-direction:column; gap:9px; margin-bottom:14px; }
+.ann-adm-item { display:flex; align-items:center; gap:10px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; transition:border-color 0.2s; }
+.ann-adm-item:hover { border-color:rgba(199,154,60,0.4); }
+.ann-adm-item span { flex:1; font-size:14px; color:var(--text-mid); font-weight:400; }
+
+.save-row { margin-top:24px; display:flex; gap:10px; justify-content:flex-end; padding-top:20px; border-top:2px solid var(--border); }
+
+/* PROFILE SWITCHER */
+.ps-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:linear-gradient(180deg,var(--surface),var(--surface2)); border:1.5px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; box-shadow:var(--sh-sm); position:relative; overflow:hidden; }
+.ps-bar::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent), var(--gold), var(--accent3)); }
+.ps-label { font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent); font-family:'Sarabun',sans-serif; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.ps-tabs { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+.ps-tab { display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:24px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); font-size:13px; font-weight:600; color:var(--text-mid); transition:all 0.22s; font-family:'Sarabun',sans-serif; position:relative; }
+.ps-tab:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); }
+.ps-tab.active { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); box-shadow:0 0 0 3px rgba(199,154,60,0.16); }
+.ps-tab .ps-live-dot { width:7px; height:7px; border-radius:50%; background:#5b8a3c; box-shadow:0 0 6px rgba(91,138,60,0.7); animation:pls 2s ease-in-out infinite; flex-shrink:0; }
+.ps-tab .ps-del { width:16px; height:16px; border-radius:50%; background:rgba(140,47,47,0.14); color:var(--accent3); font-size:10px; display:none; align-items:center; justify-content:center; border:none; cursor:pointer; transition:all 0.15s; padding:0; line-height:1; flex-shrink:0; }
+.ps-tab:hover .ps-del { display:flex; }
+.ps-tab .ps-del:hover { background:var(--accent3); color:#fff; transform:scale(1.15); }
+.ps-new { display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:24px; cursor:pointer; border:1.5px dashed var(--border); background:transparent; font-size:13px; font-weight:600; color:var(--text-muted); transition:all 0.22s; font-family:'Sarabun',sans-serif; }
+.ps-new:hover { border-color:var(--gold); color:var(--accent); background:var(--gold-soft); }
+.ps-share { display:inline-flex; align-items:center; gap:5px; padding:7px 12px; border-radius:24px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface,#fffdf7); font-size:12.5px; font-weight:600; color:var(--accent); transition:all 0.22s; font-family:'Sarabun',sans-serif; white-space:nowrap; }
+.ps-share:hover { border-color:var(--gold); background:var(--gold-soft); }
+.pub-profile-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,253,247,0.88); border:1px solid rgba(199,154,60,0.3); border-radius:20px; padding:4px 12px; font-size:12px; color:var(--text-muted); font-family:'Sarabun',sans-serif; font-weight:500; backdrop-filter:blur(8px); margin-top:2px; box-shadow:0 2px 8px rgba(80,60,20,0.08); }
+
+@keyframes saveFlash { 0%{box-shadow:0 0 0 rgba(42,59,107,0);} 40%{box-shadow:0 0 32px rgba(199,154,60,0.55);} 100%{box-shadow:0 4px 16px rgba(42,59,107,0.26);} }
+.flashed { animation:saveFlash 0.9s ease; }
+
+/* EXPORT/IMPORT + STATS */
+.io-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:18px; }
+.io-label { font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-right:4px; white-space:nowrap; font-family:'Sarabun',sans-serif; }
+.btn-xlsx-ex { background:linear-gradient(135deg,#217346,#1e8449); color:#fff; box-shadow:0 3px 12px rgba(33,115,70,0.3); }
+.btn-xlsx-ex:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(33,115,70,0.4); }
+.btn-xlsx-im { background:linear-gradient(135deg,#0ca678,#20c997); color:#fff; box-shadow:0 3px 12px rgba(12,166,120,0.3); }
+.btn-xlsx-im:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(12,166,120,0.4); }
+.btn-danger { background:linear-gradient(135deg,#a83232,#c92a2a); color:#fff; box-shadow:0 3px 12px rgba(168,50,50,0.3); }
+.btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(168,50,50,0.4); }
+
+/* สถิติคลิก */
+.stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:8px; }
+.stat-box { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 12px; text-align:center; }
+.stat-num { font-family:'Chonburi',serif; font-size:26px; color:var(--accent); line-height:1; }
+.stat-lbl { font-size:11px; color:var(--text-muted); margin-top:6px; font-weight:500; }
+.stat-list { margin-top:14px; display:flex; flex-direction:column; gap:7px; }
+.stat-row { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:9px 13px; font-size:13px; }
+.stat-row .srl { color:var(--text-mid); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stat-row .src { color:var(--accent2); font-weight:700; font-size:13px; white-space:nowrap; margin-left:10px; }
+.stat-bar { height:5px; border-radius:3px; background:linear-gradient(90deg,var(--gold),var(--accent)); margin-top:5px; }
+
+/* TOAST */
+#toast { position:fixed; bottom:28px; right:28px; z-index:999; padding:13px 20px; border-radius:14px; font-size:14px; font-weight:600; font-family:'Sarabun',sans-serif; box-shadow:var(--sh-lg); transform:translateY(20px) scale(0.95); opacity:0; transition:all 0.35s cubic-bezier(.22,.68,0,1.2); display:flex; align-items:center; gap:9px; border:1.5px solid transparent; backdrop-filter:blur(12px); }
+#toast.show { transform:translateY(0) scale(1); opacity:1; }
+#toast.ok { background:rgba(255,253,247,0.96); color:var(--text); border-color:rgba(199,154,60,0.35); }
+#toast.ok::before { content:'✓'; font-size:15px; color:#5b8a3c; font-weight:700; }
+#toast.err { background:rgba(250,240,238,0.96); color:#7a1f1f; border-color:rgba(200,120,120,0.4); }
+#toast.err::before { content:'✕'; font-size:15px; color:var(--accent3); font-weight:700; }
+
+/* LOADING */
+#loading { position:fixed; inset:0; background:var(--bg); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; transition:opacity 0.5s; }
+#loading.hidden { opacity:0; pointer-events:none; }
+.spin-outer { width:54px; height:54px; border-radius:50%; padding:4px; background:conic-gradient(from 0deg, var(--gold), var(--accent), var(--gold-light), var(--gold)); animation:conicSpin 1.2s linear infinite; }
+.spin-inner { width:100%; height:100%; border-radius:50%; background:var(--bg); }
+.spin-label { font-family:'Chonburi',serif; font-size:15px; color:var(--accent); letter-spacing:1px; animation:pls 1.5s ease-in-out infinite; }
+
+/* CLICK TRANSITION OVERLAY */
+#click-overlay { position:fixed; inset:0; z-index:9000; pointer-events:none; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#click-overlay.running { pointer-events:all; }
+.co-wash { position:absolute; inset:0; background:rgba(245,239,225,0); backdrop-filter:blur(0px); }
+.running .co-wash { animation: washIn 1.1s ease forwards; }
+@keyframes washIn { 0%{background:rgba(245,239,225,0);backdrop-filter:blur(0px);} 20%{background:rgba(245,239,225,0.88);backdrop-filter:blur(22px) saturate(1.4);} 70%{background:rgba(245,239,225,0.92);backdrop-filter:blur(26px) saturate(1.5);} 100%{background:rgba(245,239,225,0);backdrop-filter:blur(0px);} }
+.co-ripple { position:absolute; border-radius:50%; background:conic-gradient(from 0deg, var(--accent), var(--gold), var(--accent3), var(--accent)); opacity:0; transform:scale(0); pointer-events:none; transform-origin:center; }
+.running .co-ripple { animation: rippleOut 0.65s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes rippleOut { 0%{opacity:0.5;transform:scale(0);} 60%{opacity:0.18;transform:scale(1);} 100%{opacity:0;transform:scale(1.2);} }
+.co-logo-wrap { position:absolute; display:flex; align-items:center; justify-content:center; opacity:0; z-index:3; width:120px; height:120px; }
+.running .co-logo-wrap { animation: logoFly 1.05s cubic-bezier(.22,.68,0,1.2) 0.05s forwards; }
+@keyframes logoFly { 0%{opacity:0;transform:translateY(70px) scale(0.4);} 28%{opacity:1;transform:translateY(0) scale(1);} 65%{opacity:1;transform:translateY(-14px) scale(1.05);} 100%{opacity:0;transform:translateY(-90px) scale(0.55);} }
+.co-logo-glow { position:absolute; inset:-12px; border-radius:50%; background:conic-gradient(from 0deg, var(--gold), var(--accent), var(--gold-light), var(--gold)); filter:blur(5px); opacity:0.5; animation:conicSpin 1.2s linear infinite; }
+.co-logo-ring-wrap { position:absolute; inset:-6px; border-radius:50%; background:conic-gradient(from 0deg, var(--gold), var(--accent), var(--gold-light), var(--gold)); animation:conicSpin 1.2s linear infinite; padding:3px; }
+.co-logo-ring-inner { width:100%; height:100%; border-radius:50%; background:var(--surface); }
+.co-logo-img, .co-logo-ph { width:96px; height:96px; border-radius:50%; border:4px solid var(--surface); box-shadow:0 10px 40px rgba(42,59,107,0.35), 0 0 0 6px rgba(199,154,60,0.18); object-fit:cover; background:linear-gradient(135deg,#f3ebd6,#e8dcc0); display:flex; align-items:center; justify-content:center; font-size:36px; color:var(--accent); position:relative; z-index:1; }
+.co-dest { position:absolute; top:calc(50% + 72px); left:50%; transform:translateX(-50%); font-family:'Sarabun',sans-serif; font-size:15px; font-weight:600; color:var(--accent); letter-spacing:0.5px; opacity:0; white-space:nowrap; z-index:3; background:rgba(255,253,247,0.9); padding:6px 16px; border-radius:20px; border:1px solid rgba(199,154,60,0.3); backdrop-filter:blur(8px); box-shadow:0 2px 12px rgba(80,60,20,0.14); }
+.running .co-dest { animation: destPop 1.05s ease 0.1s forwards; }
+@keyframes destPop { 0%{opacity:0;transform:translateX(-50%) translateY(14px) scale(0.9);} 30%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);} 70%{opacity:1;transform:translateX(-50%) translateY(-4px) scale(1);} 100%{opacity:0;transform:translateX(-50%) translateY(-20px) scale(0.85);} }
+.co-particle { position:fixed; border-radius:50%; pointer-events:none; }
+@keyframes particleBurst { 0%{opacity:1;transform:translate(0,0) scale(1);} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.1);} }
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .adm-grid { grid-template-columns:1fr; }
+  .ac.full { grid-column:1; }
+  .c-grid { grid-template-columns:1fr; }
+  .scroll-card { padding:30px 20px 26px; }
+  .stat-grid { grid-template-columns:1fr 1fr; }
+  nav { top:0; }
+  #page-public { padding-top:96px; }
+}
+</style>
+</head>
+<body>
+
+<!-- พื้นหลัง -->
+<div class="paper-bg"></div>
+<div class="bg-cover" id="bg-cover"></div>
+<div class="light-sweep" id="light-sweep"></div>
+<div class="lights-field" id="lights-field"></div>
+<div class="flower-field" id="flower-field"></div>
+<div class="gold-edge-top"></div>
+<div class="gold-edge-bot"></div>
+
+<!-- Click Transition Overlay -->
+<div id="click-overlay">
+  <div class="co-wash" id="co-wash"></div>
+  <div class="co-ripple" id="co-ripple"></div>
+  <div class="co-logo-wrap" id="co-logo-wrap">
+    <div class="co-logo-glow"></div>
+    <div class="co-logo-ring-wrap"><div class="co-logo-ring-inner"></div></div>
+    <img id="co-logo-img" class="co-logo-img" src="" alt="" style="display:none">
+    <div id="co-logo-ph" class="co-logo-ph">๛</div>
+  </div>
+  <div class="co-dest" id="co-dest"></div>
+</div>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spin-outer"><div class="spin-inner"></div></div>
+  <div class="spin-label">กำลังเปิดห้องเรียน…</div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Copy Text Modal -->
+<div class="modal-overlay" id="copy-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCopyModal()">×</button>
+    <div class="modal-title" id="copy-modal-title">คัดลอกข้อความ</div>
+    <div class="modal-sub">เลือกแล้วคัดลอก หรือกดปุ่ม “คัดลอกข้อความ” ด้านล่าง</div>
+    <textarea class="copy-modal-ta" id="copy-modal-ta" readonly onclick="this.select()"></textarea>
+    <div class="copy-modal-actions">
+      <button class="btn btn-o btn-sm" onclick="closeCopyModal()">ปิด</button>
+      <button class="btn btn-p btn-sm" id="copy-modal-btn" onclick="doCopyModalText()"><span>📋 คัดลอกข้อความ</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Progress Modal -->
+<div class="modal-overlay" id="up-overlay">
+  <div class="modal-box" style="max-width:340px">
+    <div id="up-icon" style="font-size:34px;margin-bottom:6px"><div class="spin-outer" style="margin:0 auto"><div class="spin-inner"></div></div></div>
+    <div class="modal-title" id="up-title" style="font-size:19px;margin-top:10px">กำลังอัปโหลด</div>
+    <div class="modal-sub" id="up-sub">กำลังส่งรูปขึ้น Google Drive…</div>
+    <div id="up-fname" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;word-break:break-all"></div>
+    <div style="height:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;overflow:hidden">
+      <div id="up-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .25s"></div>
+    </div>
+    <div id="up-pct" style="font-size:12px;color:var(--accent);font-weight:700;margin-top:8px">0%</div>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeQR()">×</button>
+    <div class="modal-title" id="qr-title">แชร์ห้องเรียน</div>
+    <div class="modal-sub">สแกนเพื่อเปิดหน้านี้บนมือถือ</div>
+    <div class="qr-canvas-wrap"><canvas id="qr-canvas"></canvas></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-o btn-sm" onclick="copyLink()">🔗 คัดลอกลิงก์</button>
+      <button class="btn btn-o btn-sm" onclick="downloadQR()">⬇ บันทึก QR</button>
+      <button class="btn btn-p btn-sm" onclick="printQR()"><span>🖨 พิมพ์แจกนักเรียน</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Announcement Popup (เด้งเมื่อเปิดหน้าเว็บ) -->
+<div class="modal-overlay" id="ann-modal">
+  <div class="modal-box ann-modal-box">
+    <button class="modal-close" onclick="closeAnnModal()">×</button>
+    <div class="ann-modal-icon">📢</div>
+    <div class="modal-title" id="ann-modal-title">ประกาศจากห้องเรียน</div>
+    <div class="ann-modal-list" id="ann-modal-list"></div>
+    <button class="btn btn-p btn-sm ann-modal-ok" onclick="closeAnnModal()"><span>รับทราบ</span></button>
+  </div>
+</div>
+
+<!-- Crop Modal (รูปประจำตัว) -->
+<div class="modal-overlay" id="crop-modal">
+  <div class="modal-box" style="max-width:460px">
+    <button class="modal-close" onclick="closeCrop()">×</button>
+    <div class="modal-title">ครอบตัดรูปประจำตัว</div>
+    <div class="modal-sub">ลากกรอบเพื่อเลือกพื้นที่ · ลากมุมเพื่อย่อ/ขยาย</div>
+    <div class="crop-stage" id="crop-stage">
+      <img id="crop-img" alt="">
+      <div class="crop-box" id="crop-box">
+        <span class="crop-h tl"></span><span class="crop-h tr"></span>
+        <span class="crop-h bl"></span><span class="crop-h br"></span>
+      </div>
+    </div>
+    <div class="crop-tools">
+      <button class="btn btn-o btn-sm" id="crop-lock-btn" onclick="toggleCropLock()">🔓 อิสระ</button>
+      <button class="btn btn-o btn-sm" onclick="resetCrop()">↺ รีเซ็ตกรอบ</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-g btn-sm" onclick="closeCrop()">ยกเลิก</button>
+      <button class="btn btn-p btn-sm" onclick="applyCrop()"><span>✓ ใช้รูปนี้</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Navbar -->
+<nav>
+  <div class="nav-pill">
+    <button class="t-btn active" onclick="switchTab('public',this)"><span>๏ หน้าหลัก</span></button>
+    <button class="t-btn" onclick="switchTab('admin',this)"><span>⚙ จัดการ</span></button>
+  </div>
+</nav>
+
+<!-- ════════════ PUBLIC PAGE ════════════ -->
+<div id="page-public" class="page active">
+  <div class="pub-wrap">
+    <div class="scroll-card">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+
+      <div class="profile-block">
+        <div class="avatar-wrap">
+          <div class="av-glow"></div>
+          <div class="av-ring"><div class="av-ring-inner"></div></div>
+          <img id="pub-logo" class="avatar-img" src="" alt="logo" style="display:none">
+          <div id="pub-logo-ph" class="avatar-ph">๛</div>
+        </div>
+        <h1 class="pub-name" id="pub-title">ห้องเรียนครูนนท์</h1>
+        <p class="pub-sub" id="pub-sub"></p>
+        <div id="pub-profile-badge" class="pub-profile-badge" style="display:none">
+          <span class="sdot"></span><span id="pub-profile-name"></span>
+        </div>
+      </div>
+
+      <div class="rule"><span class="rule-mark">๛</span></div>
+      <div id="pub-anns"></div>
+      <div class="links-wrap" id="pub-links"></div>
+
+      <div class="pub-tools">
+        <button class="pub-tool-btn" onclick="openQR()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg> แชร์ QR</button>
+        <button class="pub-tool-btn" onclick="copyLink()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> คัดลอกลิงก์</button>
+      </div>
+    </div>
+
+    <div class="pub-foot">
+      <span class="sdot"></span>
+      <span id="pub-foot-txt">ห้องเรียนออนไลน์ · ครูนนทพัทธ์</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ ADMIN PAGE ════════════ -->
+<div id="page-admin" class="page">
+  <div id="lock-wrap">
+    <div class="lock-box">
+      <div class="lk-badge">🔒</div>
+      <div class="lk-title">เข้าสู่ระบบผู้ดูแล</div>
+      <div class="lk-sub">กรอกรหัสผ่านเพื่อจัดการห้องเรียน</div>
+      <div class="fg">
+        <label class="fl">รหัสผ่าน</label>
+        <input type="password" id="adm-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doPw()">
+      </div>
+      <button class="btn btn-p btn-full" onclick="doPw()">
+        <div class="btn-shine"></div>
+        <span>เข้าสู่ระบบ →</span>
+      </button>
+      <div id="pw-err" class="lk-err">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</div>
+    </div>
+  </div>
+
+  <div id="adm-panel" style="display:none;width:100%">
+    <div class="adm-hd">
+      <div>
+        <div class="adm-title">แผงควบคุม</div>
+        <div class="adm-sub">กำลังแก้ไข: <span id="adm-profile-name" style="color:var(--accent);font-weight:600">ห้องเรียนหลัก</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="unsaved-flag" style="display:none;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#c92a2a;background:rgba(201,42,42,0.1);border:1px solid rgba(201,42,42,0.3);padding:4px 10px;border-radius:999px">● ยังไม่ได้บันทึก</span>
+        <button class="btn btn-o btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+      </div>
+    </div>
+
+    <div class="adm-grid">
+
+      <!-- Profile Switcher -->
+      <div class="ac full" style="padding:0;overflow:visible;border:none;background:none;box-shadow:none;">
+        <div class="ps-bar" id="ps-bar">
+          <span class="ps-label">📚 ห้องเรียน</span>
+          <div class="ps-tabs" id="ps-tabs"></div>
+          <button class="ps-share" onclick="copyProfileLink()" title="คัดลอกลิงก์เปิดตรงห้องนี้">🔗 คัดลอกลิงก์ห้องนี้</button>
+          <button class="ps-share" onclick="openProfileLink()" title="เปิดหน้าห้องนี้ในแท็บใหม่">↗ เปิดดู</button>
+          <button class="ps-new" onclick="doNewProfile()">＋ เพิ่มห้องเรียน</button>
+        </div>
+      </div>
+
+      <!-- Backup / Restore (ทั้งเว็บ ทุกห้องเรียน) -->
+      <div class="ac full">
+        <div class="ac-title">💾 สำรอง / กู้คืนข้อมูล (ทั้งเว็บ ทุกห้องเรียน)</div>
+        <div class="io-bar">
+          <span class="io-label">🗄️ ไฟล์สำรอง .json</span>
+          <button class="btn btn-p btn-sm" onclick="doExportJson()">⬇ สำรองข้อมูลทั้งเว็บ</button>
+          <label class="btn btn-o btn-sm" style="cursor:pointer;margin:0">⬆ กู้คืนจากไฟล์<input type="file" accept=".json,application/json" style="display:none" onchange="doImportJson(event)"></label>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5">
+          สำรองทุกห้องเรียน · ลิงก์ · ประกาศ · ธีม · โลโก้ · การตั้งค่า GAS/Drive ไว้เป็นไฟล์เดียว แนะนำให้สำรองเป็นประจำ การกู้คืนจะแทนที่ข้อมูลปัจจุบันทั้งหมด
+        </div>
+      </div>
+
+      <!-- Identity -->
+      <div class="ac">
+        <div class="ac-title">ข้อมูลห้องเรียน</div>
+        <div class="fg"><label class="fl">ชื่อหน้า / ห้องเรียน</label><input type="text" id="cfg-title" placeholder="ห้องเรียนครูนนท์"></div>
+        <div class="fg"><label class="fl">คำอธิบาย / คติประจำใจ</label><textarea id="cfg-sub" placeholder="เช่น ครูสอนภาษาไทย · วรรณคดีคือสมบัติของแผ่นดิน"></textarea></div>
+        <div class="fg"><label class="fl">ข้อความท้ายหน้า (footer)</label><input type="text" id="cfg-foot" placeholder="ห้องเรียนออนไลน์ · ครูนนทพัทธ์"></div>
+        <div class="fg"><label class="fl">ชื่อครูผู้พัฒนา (แสดงในเอกสารพิมพ์ QR)</label><input type="text" id="cfg-dev" placeholder="เช่น ครูนนทพัทธ์"></div>
+        <div class="fg"><label class="fl">เปลี่ยนรหัสผ่าน</label><input type="password" id="cfg-pw" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน"></div>
+      </div>
+
+      <!-- Logo -->
+      <div class="ac">
+        <div class="ac-title">รูปประจำตัว</div>
+        <div class="logo-up" id="logo-area">
+          <img id="logo-prev" class="logo-prev" style="display:none" src="">
+          <div id="logo-hint">
+            <div style="font-size:28px;margin-bottom:8px">🖼️</div>
+            <div class="logo-hint-txt">คลิกเพื่ออัปโหลดรูปจากเครื่อง<br><span style="font-size:11px;opacity:.6">PNG, JPG — แนะนำ 512×512 · เก็บบน Google Drive</span></div>
+          </div>
+          <input type="file" id="logo-file" accept=".png,.jpg,.jpeg" onchange="doUpload(event)">
+        </div>
+        <div id="up-msg" style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:12px;font-family:'Sarabun',sans-serif"></div>
+        <div class="fg"><label class="fl">หรือวาง URL รูปภาพ</label><input type="url" id="cfg-logo-url" placeholder="https://..."></div>
+      </div>
+
+      <!-- Background Image -->
+      <div class="ac">
+        <div class="ac-title">ภาพพื้นหลัง</div>
+        <div class="logo-up" id="bg-area" style="border-radius:var(--radius)">
+          <img id="bg-prev" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1.5px solid var(--border)" src="">
+          <div id="bg-hint">
+            <div style="font-size:28px;margin-bottom:8px">🌄</div>
+            <div class="logo-hint-txt">คลิกเพื่ออัปโหลดภาพพื้นหลัง<br><span style="font-size:11px;opacity:.6">แนวนอน · เก็บบน Google Drive</span></div>
+          </div>
+          <input type="file" id="bg-file" accept=".png,.jpg,.jpeg,.webp" onchange="doUploadBg(event)">
+        </div>
+        <div id="bg-up-msg" style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:12px;font-family:'Sarabun',sans-serif"></div>
+        <div class="fg"><label class="fl">หรือวาง URL ภาพพื้นหลัง</label><input type="url" id="cfg-bg-url" placeholder="https://..." oninput="onBgUrlInput()"></div>
+        <div class="fg" style="margin-bottom:6px">
+          <label class="fl">ความเข้ม/จางของภาพ <span id="bg-op-val" style="color:var(--accent);font-weight:700">35%</span></label>
+          <input type="range" id="cfg-bg-op" min="0" max="100" value="35" oninput="onBgOpacity()" style="width:100%;accent-color:var(--accent);cursor:pointer">
+        </div>
+        <button class="btn btn-g btn-full btn-sm" onclick="clearBg()">✕ เอาภาพพื้นหลังออก</button>
+      </div>
+
+      <!-- Theme -->
+      <div class="ac">
+        <div class="ac-title">ธีมสีวรรณคดี</div>
+        <label class="fl">ธีมสำเร็จรูป</label>
+        <div class="chip-row" id="presets"></div>
+        <label class="fl">กำหนดสีเอง</label>
+        <div class="c-grid">
+          <div><label class="fl" style="margin-bottom:5px">สีหลัก</label>
+            <div class="cpw"><input type="color" id="ca1" value="#2a3b6b" oninput="doColor()"><span id="ca1v">#2a3b6b</span></div></div>
+          <div><label class="fl" style="margin-bottom:5px">สีทอง/รอง</label>
+            <div class="cpw"><input type="color" id="ca2" value="#c79a3c" oninput="doColor()"><span id="ca2v">#c79a3c</span></div></div>
+          <div><label class="fl" style="margin-bottom:5px">พื้นหลัง</label>
+            <div class="cpw"><input type="color" id="cbg" value="#f5efe1" oninput="doColor()"><span id="cbgv">#f5efe1</span></div></div>
+          <div><label class="fl" style="margin-bottom:5px">สีข้อความ</label>
+            <div class="cpw"><input type="color" id="ctx" value="#2b2419" oninput="doColor()"><span id="ctxv">#2b2419</span></div></div>
+        </div>
+      </div>
+
+      <!-- Custom Font -->
+      <div class="ac">
+        <div class="ac-title">ฟอนต์ชื่อห้องเรียน</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:10px">
+          อัปโหลดไฟล์ฟอนต์ (.ttf .otf .woff .woff2) เพื่อใช้แสดง “ชื่อห้องเรียน” บนหน้าเว็บ · ฝังในข้อมูลโดยตรง (ไม่ต้องใช้ Drive)
+        </div>
+        <div class="logo-up" id="font-area" style="border-radius:var(--radius);min-height:auto;padding:18px 14px">
+          <div id="font-hint">
+            <div style="font-size:26px;margin-bottom:6px">🅰️</div>
+            <div class="logo-hint-txt">คลิกเพื่ออัปโหลดไฟล์ฟอนต์<br><span style="font-size:11px;opacity:.6">รองรับ .ttf .otf .woff .woff2 · ไม่เกิน 2.5MB</span></div>
+          </div>
+          <div id="font-loaded" style="display:none">
+            <div class="font-prev" id="font-prev">ห้องเรียนครูนนท์ AaBbКก123</div>
+            <div id="font-name" style="font-size:12px;color:var(--accent);font-weight:600;margin-top:8px"></div>
+          </div>
+          <input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2" onchange="doUploadFont(event)">
+        </div>
+        <div id="font-up-msg" style="font-size:12px;color:var(--text-muted);text-align:center;margin:8px 0;font-family:'Sarabun',sans-serif"></div>
+        <button class="btn btn-g btn-full btn-sm" onclick="clearFont()">✕ ใช้ฟอนต์เริ่มต้น (Chonburi)</button>
+      </div>
+
+      <!-- Content Font -->
+      <div class="ac">
+        <div class="ac-title">ฟอนต์เนื้อหา</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:10px">
+          อัปโหลดฟอนต์สำหรับ “เนื้อหาทั้งหน้า” (คำอธิบาย · ปุ่มลิงก์ · ประกาศ · ท้ายหน้า) · ฝังในข้อมูลโดยตรง
+        </div>
+        <div class="logo-up" id="cfont-area" style="border-radius:var(--radius);min-height:auto;padding:18px 14px">
+          <div id="cfont-hint">
+            <div style="font-size:26px;margin-bottom:6px">🔤</div>
+            <div class="logo-hint-txt">คลิกเพื่ออัปโหลดไฟล์ฟอนต์<br><span style="font-size:11px;opacity:.6">รองรับ .ttf .otf .woff .woff2 · ไม่เกิน 2.5MB</span></div>
+          </div>
+          <div id="cfont-loaded" style="display:none">
+            <div class="font-prev" id="cfont-prev" style="font-size:16px">เนื้อหาตัวอย่าง · วรรณคดีไทย AaBb 123</div>
+            <div id="cfont-name" style="font-size:12px;color:var(--accent);font-weight:600;margin-top:8px"></div>
+          </div>
+          <input type="file" id="cfont-file" accept=".ttf,.otf,.woff,.woff2" onchange="doUploadContentFont(event)">
+        </div>
+        <div id="cfont-up-msg" style="font-size:12px;color:var(--text-muted);text-align:center;margin:8px 0;font-family:'Sarabun',sans-serif"></div>
+        <button class="btn btn-g btn-full btn-sm" onclick="clearContentFont()">✕ ใช้ฟอนต์เริ่มต้น (Sarabun)</button>
+      </div>
+
+      <!-- Announcements -->
+      <div class="ac">
+        <div class="ac-title">ประกาศ / ป้ายนิเทศ</div>
+        <div class="ann-adm-list" id="ann-list"></div>
+        <div class="fg"><label class="fl">ประกาศใหม่</label><textarea id="new-ann" placeholder="พิมพ์ข้อความประกาศ..." style="min-height:64px"></textarea></div>
+        <button class="btn btn-o btn-full btn-sm" onclick="doAddAnn()">+ เพิ่มประกาศ</button>
+      </div>
+
+      <!-- Click Stats -->
+      <div class="ac">
+        <div class="ac-title">สถิติการคลิก</div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-num" id="st-total">0</div><div class="stat-lbl">คลิกรวม</div></div>
+          <div class="stat-box"><div class="stat-num" id="st-links">0</div><div class="stat-lbl">ลิงก์ทั้งหมด</div></div>
+          <div class="stat-box"><div class="stat-num" id="st-anns">0</div><div class="stat-lbl">ประกาศ</div></div>
+        </div>
+        <div class="stat-list" id="stat-list"></div>
+        <button class="btn btn-g btn-full btn-sm" style="margin-top:10px" onclick="resetClicks()">↺ รีเซ็ตตัวนับคลิก</button>
+      </div>
+
+      <!-- GAS / Drive Upload Settings -->
+      <div class="ac full">
+        <div class="ac-title">☁️ ตั้งค่าอัปโหลดรูป (Google Drive ผ่าน Apps Script)</div>
+        <div style="font-size:12.5px;color:var(--text-muted);line-height:1.7;margin-bottom:14px">
+          ใส่ค่าด้านล่างเพื่ออัปโหลดรูปจากเครื่องขึ้น Google Drive ได้โดยตรง · ดูวิธีสร้าง GAS ในภาคผนวกท้ายไฟล์ (Code.gs)
+        </div>
+        <div class="lr-fields" style="grid-template-columns:1fr 1fr">
+          <div class="fg" style="margin:0"><label class="fl">GAS Web App URL (/exec)</label><input type="url" id="cfg-gas" placeholder="https://script.google.com/macros/s/AKfy.../exec" onblur="checkGas()"></div>
+          <div class="fg" style="margin:0"><label class="fl">Google Drive Folder ID</label><input type="text" id="cfg-folder" placeholder="เช่น 1fCqqqGaMmgr..."></div>
+        </div>
+        <div id="gas-status" style="font-size:12px;margin-top:10px;font-weight:600"></div>
+      </div>
+
+      <!-- Links -->
+      <div class="ac full">
+        <div class="ac-title">ปุ่มลิงก์ / สื่อการสอน</div>
+        <div class="io-bar">
+          <span class="io-label">📊 ข้อมูล</span>
+          <button class="btn btn-xlsx-ex btn-sm" onclick="doExportXlsx()">⬇ Export .xlsx</button>
+          <label class="btn btn-xlsx-im btn-sm" style="cursor:pointer;margin:0">⬆ Import .xlsx<input type="file" accept=".xlsx,.xls" style="display:none" onchange="doImportXlsx(event)"></label>
+          <button class="btn btn-danger btn-sm" onclick="doClearAll()" style="margin-left:auto">🗑 ล้างข้อมูลทั้งหมด</button>
+        </div>
+        <div class="le-list" id="link-list"></div>
+        <button class="add-lr" onclick="doAddLink()"><span style="font-size:18px;line-height:1">+</span> เพิ่มลิงก์</button>
+      </div>
+
+    </div>
+
+    <div class="save-row">
+      <button class="btn btn-o" onclick="loadConfig()">↺ รีเฟรช</button>
+      <button class="btn btn-p" id="save-btn" onclick="doSave()">
+        <div class="btn-shine"></div>
+        <span>บันทึกการเปลี่ยนแปลง</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+const DEFAULT_PROFILE = {
+  title:'ห้องเรียนครูนนท์', subtitle:'ครูสอนภาษาไทย · วรรณคดีคือสมบัติของแผ่นดิน',
+  footer:'ห้องเรียนออนไลน์ · ครูนนทพัทธ์', developer:'ครูนนทพัทธ์', logoUrl:'',
+  bgImage:'', bgOpacity:0.35,
+  accent1:'#2a3b6b', accent2:'#c79a3c', bgColor:'#f5efe1', textColor:'#2b2419',
+  fontData:'', fontName:'',
+  contentFontData:'', contentFontName:'',
+  links:[], announcements:[]
+};
+
+let store = {
+  password: '1234',
+  activeProfile: 'p1',
+  gasEndpoint: '',       // GAS Web App URL (/exec) — ตั้งในแผงจัดการ
+  driveFolderId: '',     // Google Drive Folder ID ปลายทาง
+  profiles: { p1: { name:'ห้องเรียนหลัก', ...structuredClone(DEFAULT_PROFILE) } }
+};
+
+// ── ตัวแปรอัปโหลด Drive (อ่านจาก store) ──
+let DRIVE_UPLOAD_ENDPOINT = '';
+let DRIVE_FOLDER_ID = '';
+function syncDriveCfg(){ DRIVE_UPLOAD_ENDPOINT = store.gasEndpoint||''; DRIVE_FOLDER_ID = store.driveFolderId||''; }
+
+function ap(){ return store.profiles[store.activeProfile] || Object.values(store.profiles)[0]; }
+function setAP(key,val){ ap()[key]=val; }
+
+// ─── per-profile share link (?p=<id>) ───
+// ถ้ามี ?p=<id> ใน URL → หน้าสาธารณะจะเปิด "ห้องเรียนนั้น" ตรง ๆ
+function urlProfileId(){
+  try{ const id=new URLSearchParams(location.search).get('p'); return (id&&store.profiles[id])?id:''; }catch(e){ return ''; }
+}
+// ห้องเรียนที่ "หน้าสาธารณะ" ต้องแสดง: ถ้ามี ?p= ใช้อันนั้น มิฉะนั้นใช้ activeProfile
+function viewId(){ return urlProfileId() || store.activeProfile; }
+function pubAP(){ return store.profiles[viewId()] || ap(); }
+// สร้าง URL แชร์เปิดตรงห้องที่ระบุ
+function profileLink(id){ return location.origin+location.pathname+'?p='+encodeURIComponent(id); }
+
+// ─── PRESETS วรรณคดีไทยร่วมสมัย ───
+const PRESETS = [
+  {label:'ครีม·ทอง·คราม', a1:'#2a3b6b',a2:'#c79a3c',bg:'#f5efe1',tx:'#2b2419'},
+  {label:'ครั่ง·ชาด',     a1:'#8c2f2f',a2:'#c79a3c',bg:'#f7efe6',tx:'#2b1a14'},
+  {label:'เขียวมรกต',    a1:'#1f6b52',a2:'#c79a3c',bg:'#eef6ef',tx:'#16271f'},
+  {label:'ม่วงดอกอัญชัน', a1:'#4a2f7a',a2:'#c79a3c',bg:'#f4f0fa',tx:'#241740'},
+  {label:'น้ำเงินคราม',   a1:'#1e3a8a',a2:'#d4a843',bg:'#eef1f9',tx:'#16203d'},
+  {label:'ชมพูบุปผา',    a1:'#a13b6b',a2:'#c79a3c',bg:'#faf0f5',tx:'#33142a'},
+  {label:'กลางคืน·เงิน',  a1:'#c79a3c',a2:'#e3c570',bg:'#161310',tx:'#f0e8d8'},
+  {label:'น้ำตาลกระดาษ',  a1:'#6b4f2a',a2:'#c79a3c',bg:'#f3ead7',tx:'#2b2010'},
+  // ── เพิ่มเติม (รวมทั้งหมด 30 ธีม) ──
+  {label:'ฟ้าวิมาน',      a1:'#1565c0',a2:'#64b5f6',bg:'#eef5fc',tx:'#10243d'},
+  {label:'เทาเงินยวง',    a1:'#455a64',a2:'#90a4ae',bg:'#eef1f3',tx:'#1c272c'},
+  {label:'ส้มอรุณ',       a1:'#d2691e',a2:'#f6a623',bg:'#fff4e8',tx:'#3a1f08'},
+  {label:'แดงชาด·ทอง',    a1:'#b71c1c',a2:'#d4a843',bg:'#fbeeea',tx:'#33100c'},
+  {label:'เขียวไพล',      a1:'#2e7d32',a2:'#9ccc65',bg:'#f0f7ec',tx:'#16280f'},
+  {label:'เขียวขุนเขา',   a1:'#0b6e6e',a2:'#48b3a8',bg:'#eaf6f5',tx:'#0e2b29'},
+  {label:'ครามนิล',       a1:'#283593',a2:'#7986cb',bg:'#eef0fa',tx:'#141a3d'},
+  {label:'ม่วงราตรี',     a1:'#5e35b1',a2:'#b39ddb',bg:'#f4f0fb',tx:'#221540'},
+  {label:'องุ่นไวน์',     a1:'#6a1b4d',a2:'#c2185b',bg:'#fbeef4',tx:'#2e0e21'},
+  {label:'กุหลาบมอญ',     a1:'#ad1457',a2:'#f06292',bg:'#fdeef4',tx:'#330e22'},
+  {label:'พีช·พาสเทล',    a1:'#e8743b',a2:'#ffb38a',bg:'#fff3ec',tx:'#3a1c0e'},
+  {label:'มะม่วงสุก',     a1:'#c98a00',a2:'#ffd24d',bg:'#fffae8',tx:'#352a07'},
+  {label:'มะกอกทอง',      a1:'#827717',a2:'#c0ca33',bg:'#f7f8e8',tx:'#262905'},
+  {label:'มอคค่า',        a1:'#5d4037',a2:'#a1887f',bg:'#f4efeb',tx:'#241712'},
+  {label:'ดินเผา',        a1:'#a8442a',a2:'#e08a5f',bg:'#fbefe9',tx:'#33150c'},
+  {label:'เทอร์ควอยซ์',   a1:'#00838f',a2:'#4dd0e1',bg:'#e8f8fa',tx:'#062b2f'},
+  {label:'ใบเตย',         a1:'#1b5e20',a2:'#66bb6a',bg:'#eef7ee',tx:'#0f2812'},
+  {label:'มินต์เย็น',     a1:'#0f766e',a2:'#5eead4',bg:'#ecfbf7',tx:'#0c2b27'},
+  {label:'ลาเวนเดอร์',    a1:'#7048e8',a2:'#b197fc',bg:'#f5f1ff',tx:'#241449'},
+  {label:'น้ำเงินเข้ม·ทอง',a1:'#0d1b3e',a2:'#d4a843',bg:'#eef0f6',tx:'#0d1530'},
+  {label:'ถ่านดำ·ทอง',   a1:'#d4a843',a2:'#f0d27a',bg:'#14130f',tx:'#f1e9d6'},
+  {label:'ม่วงเข้ม·นีออน', a1:'#7b2ff7',a2:'#19d3da',bg:'#13101f',tx:'#ece8f7'},
+  {label:'เขียวมิดไนต์',  a1:'#1de9b6',a2:'#64ffda',bg:'#0f1a17',tx:'#ddf7f0'},
+];
+
+// ─── SYNC GUARDS (กันชน race condition) ───
+// adminOpen      = อยู่ในแผงจัดการหรือไม่ (ถ้าใช่ ห้าม snapshot รีเซ็ตฟอร์มที่กำลังแก้)
+// localWriteUntil= กันเสียง echo จากการเขียนของเราเอง (snapshot ที่เด้งกลับมาทันที)
+// configLoaded   = โหลดครั้งแรกเสร็จแล้ว เพื่อให้ปุ่มสลับห้องรอจนพร้อม
+let adminOpen=false, configLoaded=false, localWriteUntil=0, switching=false;
+function markLocalWrite(){ localWriteUntil = Date.now()+4000; }
+// บันทึก store ทั้งก้อนขึ้น Firebase (ใช้ตอนสลับ/สร้าง/ลบห้อง) — กันข้อมูลหายหลังรีเฟรช
+async function persistStore(){
+  try{
+    const {doc,setDoc}=window._firestoreFns;
+    if(!window._db||!doc) return false;
+    markLocalWrite();
+    await setDoc(doc(window._db,'linktree','config'), store);
+    return true;
+  }catch(e){ toast('ซิงก์ไม่สำเร็จ: '+e.message,'err'); return false; }
+}
+
+// ─── FIREBASE INIT ───
+window.addEventListener('firebaseReady', async()=>{
+  await loadConfig(); buildPresets(); buildProfileTabs();
+  configLoaded=true;
+  gi('loading').classList.add('hidden');
+  maybeShowAnnModal();   // เด้งประกาศเมื่อเปิดหน้าเว็บ
+  const {doc,onSnapshot}=window._firestoreFns;
+  onSnapshot(doc(window._db,'linktree','config'),{includeMetadataChanges:false},snap=>{
+    if(!snap.exists()) return;
+    // ข้าม echo จากการเขียนของเราเอง / ระหว่างกำลังสลับห้อง
+    if(snap.metadata.hasPendingWrites) return;
+    if(switching || Date.now()<localWriteUntil) return;
+    const d=snap.data();
+    if(d.password) store.password=d.password;
+    if(d.gasEndpoint!==undefined) store.gasEndpoint=d.gasEndpoint;
+    if(d.driveFolderId!==undefined) store.driveFolderId=d.driveFolderId;
+    syncDriveCfg();
+    // ⛔ ถ้ากำลังแก้ไขอยู่ในแผงจัดการ ห้ามทับ profiles/activeProfile (กันฟอร์มเด้ง/ข้อมูลหาย)
+    if(adminOpen){
+      // อัปเดตเฉพาะห้องที่ "ไม่ได้กำลังแก้" เพื่อให้ข้อมูลห้องอื่นสดอยู่ แต่ไม่แตะห้องปัจจุบัน
+      if(d.profiles){
+        Object.keys(d.profiles).forEach(id=>{
+          if(id!==store.activeProfile) store.profiles[id]=d.profiles[id];
+        });
+        // ลบห้องที่ถูกลบจากเครื่องอื่น (ยกเว้นห้องที่กำลังแก้)
+        Object.keys(store.profiles).forEach(id=>{
+          if(id!==store.activeProfile && !d.profiles[id]) delete store.profiles[id];
+        });
+        buildProfileTabs();
+      }
+      renderStats();
+      return;
+    }
+    // อยู่หน้าสาธารณะ: รับค่าล่าสุดได้เต็มที่
+    if(d.profiles) store.profiles=d.profiles;
+    if(d.activeProfile) store.activeProfile=d.activeProfile;
+    renderPublic(); buildProfileTabs();
+  });
+});
+setTimeout(()=>{
+  if(!window._firebaseReady){
+    gi('loading').classList.add('hidden');
+    buildPresets(); buildProfileTabs();
+    renderPublic(); renderLinks(); renderAnns(); fillForm();
+    maybeShowAnnModal();
+    toast('ยังไม่เชื่อมต่อ Firebase','err');
+  }
+},6000);
+
+// ─── FIRESTORE ───
+async function loadConfig(){
+  try{
+    const {doc,getDoc}=window._firestoreFns;
+    const s=await getDoc(doc(window._db,'linktree','config'));
+    if(s.exists()){
+      const d=s.data();
+      if(!d.profiles){
+        const migrated = { name:'ห้องเรียนหลัก', ...structuredClone(DEFAULT_PROFILE) };
+        ['title','subtitle','footer','logoUrl','accent1','accent2','bgColor','textColor','links','announcements'].forEach(k=>{ if(d[k]!==undefined) migrated[k]=d[k]; });
+        store.profiles={ p1: migrated }; store.activeProfile='p1';
+        if(d.password) store.password=d.password;
+      } else {
+        store.profiles=d.profiles;
+        if(d.activeProfile) store.activeProfile=d.activeProfile;
+        if(d.password) store.password=d.password;
+      }
+      if(d.gasEndpoint!==undefined) store.gasEndpoint=d.gasEndpoint;
+      if(d.driveFolderId!==undefined) store.driveFolderId=d.driveFolderId;
+      syncDriveCfg();
+    } else { await doSave(true); }
+    fillForm(); renderPublic(); renderLinks(); renderAnns(); applyTheme(); buildProfileTabs();
+  }catch(e){ toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'err'); }
+}
+
+async function doSave(silent=false){
+  try{
+    collectForm();
+    const {doc,setDoc}=window._firestoreFns;
+    markLocalWrite();
+    await setDoc(doc(window._db,'linktree','config'), store);
+    markClean();   // บันทึกแล้ว → ไม่มีการแก้ไขค้าง
+    renderPublic(); applyTheme(); renderStats();
+    if(!silent){
+      const b=gi('save-btn'); b.classList.add('flashed'); setTimeout(()=>b.classList.remove('flashed'),900);
+      toast('บันทึกเรียบร้อยแล้ว','ok');
+      // กลับไปหน้าหลักทุกครั้งหลังบันทึก
+      setTimeout(()=>{ switchTab('public', document.querySelector('.t-btn')); window.scrollTo({top:0,behavior:'smooth'}); }, 650);
+    }
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'err'); }
+}
+
+// ─── FORM ───
+function collectForm(){
+  const p=ap();
+  p.title    = gi('cfg-title').value||p.title;
+  p.subtitle = gi('cfg-sub').value;
+  p.footer   = gi('cfg-foot').value;
+  p.developer= gi('cfg-dev').value;
+  const pw=gi('cfg-pw').value; if(pw) store.password=pw;
+  store.gasEndpoint=gi('cfg-gas').value.trim();
+  store.driveFolderId=gi('cfg-folder').value.trim();
+  syncDriveCfg();
+  const lu=gi('cfg-logo-url').value; if(lu) p.logoUrl=lu;
+  p.bgImage=gi('cfg-bg-url').value.trim();
+  p.bgOpacity=parseInt(gi('cfg-bg-op').value)/100;
+  p.accent1=gi('ca1').value; p.accent2=gi('ca2').value;
+  p.bgColor=gi('cbg').value; p.textColor=gi('ctx').value;
+  // preserve clicks by matching old links by label+url
+  const oldLinks = p.links||[];
+  const newLinks=[];
+  document.querySelectorAll('.lr-data').forEach(r=>{
+    const l=r.querySelector('.ll').value.trim(),u=r.querySelector('.lu').value.trim();
+    const img=r.querySelector('.li')?.value.trim()||'';
+    const copyText=r.querySelector('.lc-copy')?.value.trim()||'';
+    if(l||u||copyText){
+      const prior=oldLinks.find(o=>o.label===l&&o.url===u);
+      newLinks.push({label:l,url:u,imgUrl:img,copyText,clicks:(prior?prior.clicks:0)||0});
+    }
+  });
+  p.links=newLinks;
+}
+function fillForm(){
+  const p=ap();
+  sv('cfg-title',p.title||''); sv('cfg-sub',p.subtitle||''); sv('cfg-foot',p.footer||'');
+  sv('cfg-dev',p.developer||'');
+  sv('cfg-gas',store.gasEndpoint||''); sv('cfg-folder',store.driveFolderId||'');
+  syncDriveCfg();
+  sv('cfg-logo-url',p.logoUrl||'');
+  gi('ca1').value=p.accent1||'#2a3b6b'; gi('ca2').value=p.accent2||'#c79a3c';
+  gi('cbg').value=p.bgColor||'#f5efe1'; gi('ctx').value=p.textColor||'#2b2419';
+  syncCL();
+  if(p.logoUrl){ showPrev(p.logoUrl); }
+  else { gi('logo-prev').style.display='none'; gi('logo-hint').style.display='block'; }
+  // ภาพพื้นหลัง
+  sv('cfg-bg-url',p.bgImage||'');
+  const opPct=Math.round((p.bgOpacity!=null?p.bgOpacity:0.35)*100);
+  gi('cfg-bg-op').value=opPct; gi('bg-op-val').textContent=opPct+'%';
+  showBgPrev(p.bgImage||''); applyBg();
+  showFontPrev(p); applyFont();
+}
+
+// ─── RENDER PUBLIC ───
+function renderPublic(){
+  const p=pubAP();
+  gi('pub-title').textContent=p.title||'ห้องเรียนครูนนท์';
+  document.title=p.title||'ห้องเรียนครูนนท์';
+  applyFont();           // ฟอนต์ชื่อห้องที่อัปโหลด
+  startTitleGradient();  // อนิเมชันไล่สีชื่อห้อง
+  gi('pub-sub').textContent=p.subtitle||'';
+  gi('pub-foot-txt').textContent=p.footer||'ห้องเรียนออนไลน์';
+  const badge=gi('pub-profile-badge'), badgeName=gi('pub-profile-name');
+  if((Object.keys(store.profiles).length>1 || urlProfileId()) && p.name){ badgeName.textContent=p.name; badge.style.display='inline-flex'; }
+  else { badge.style.display='none'; }
+  updateFavicon(p.logoUrl||'');
+  const img=gi('pub-logo'),ph=gi('pub-logo-ph');
+  if(p.logoUrl){ img.src=p.logoUrl; img.style.display='block'; ph.style.display='none'; }
+  else{ img.style.display='none'; ph.style.display='flex'; }
+  // announcements
+  const ac=gi('pub-anns'); ac.innerHTML='';
+  (p.announcements||[]).forEach((a,i)=>{
+    const d=document.createElement('div'); d.className='ann-pill'; d.style.animationDelay=(i*0.08)+'s';
+    d.innerHTML=`<div class="ann-icon">📢</div><div><div class="ann-tag">ประกาศ</div><div class="ann-msg">${esc(a)}</div></div>`;
+    ac.appendChild(d);
+  });
+  // links
+  const lc=gi('pub-links'); lc.innerHTML='';
+  (p.links||[]).forEach((l,i)=>{
+    if(!l.label&&!l.url&&!l.copyText) return;
+    const isCopy = !!(l.copyText&&l.copyText.trim()) && !l.url;
+    const a=document.createElement(isCopy?'button':'a'); a.className='lk'+(isCopy?' lk-copy':'');
+    if(isCopy){ a.type='button'; } else { a.href=l.url||'#'; a.rel='noopener'; }
+    a.style.animationDelay=(i*0.07)+'s';
+    const thumbHtml = l.imgUrl ? `<img class="lk-thumb" src="${esc(l.imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
+    const clicksHtml = (l.clicks>0) ? `<span class="lk-clicks">👁 ${l.clicks} ครั้ง</span>` : '';
+    const arr = isCopy ? '<span class="lk-arr lk-arr-copy"><span>📋</span></span>' : '<span class="lk-arr"><span>→</span></span>';
+    a.innerHTML=`<span class="lk-left">${thumbHtml}<span class="lk-textwrap"><span class="lk-label">${esc(l.label||l.url||'คัดลอกข้อความ')}</span>${clicksHtml}</span></span>${arr}`;
+    if(isCopy){
+      a.addEventListener('click', e=>{ e.preventDefault(); countClick(i); openCopyModal(l.label||'ข้อความ', l.copyText); });
+    } else if(l.url){
+      a.addEventListener('click', e=>{ e.preventDefault(); countClick(i); playLinkTransition(e, l.label||l.url, l.url); });
+    }
+    lc.appendChild(a);
+  });
+  applyTheme(); applyBg();
+}
+
+// ─── CLICK COUNTER ───
+async function countClick(idx){
+  const p=pubAP();
+  if(!p.links[idx]) return;
+  p.links[idx].clicks=(p.links[idx].clicks||0)+1;
+  try{
+    const {doc,setDoc}=window._firestoreFns;
+    markLocalWrite();   // กัน snapshot echo มาทับขณะกำลังแก้ในแผงจัดการ
+    await setDoc(doc(window._db,'linktree','config'), store, {merge:true});
+  }catch(e){ /* ทำงานต่อแม้บันทึกไม่ได้ */ }
+}
+
+// ─── ADMIN LINKS (drag-reorder) ───
+function renderLinks(){
+  const lst=gi('link-list'); lst.innerHTML='';
+  const links=ap().links&&ap().links.length?ap().links:[{label:'',url:''}];
+  links.forEach((l,i)=>appendLR(l,i));
+  initDrag();
+}
+function appendLR(l={},i=0){
+  const d=document.createElement('div'); d.className='lr lr-data'; d.draggable=true;
+  const imgVal=esc(l.imgUrl||''); const hasImg=l.imgUrl?'has-img':'';
+  const clickBadge = (l.clicks>0)?`<span class="lr-clickbadge">👁 ${l.clicks}</span>`:'';
+  d.innerHTML=`
+    <div class="lr-top-row">
+      <div class="lr-handle" title="ลากเพื่อเรียงลำดับ">⠿</div>
+      <span class="lr-num">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</span>
+      ${clickBadge}
+      <button class="lr-del" onclick="this.closest('.lr').remove();renum();initDrag()" title="ลบ">×</button>
+    </div>
+    <div class="lr-fields">
+      <input class="ll" type="text" placeholder="ชื่อปุ่ม เช่น ใบงานที่ 1" value="${esc(l.label||'')}">
+      <input class="lu" type="url" placeholder="https://..." value="${esc(l.url||'')}">
+    </div>
+    <div class="lr-img-row">
+      <img class="lr-img-preview ${hasImg}" src="${imgVal}" alt="">
+      <input class="li" type="url" placeholder="🖼 URL รูปกำกับปุ่ม (ไม่บังคับ)" value="${imgVal}" oninput="previewLinkImg(this)" style="flex:1;margin:0;font-size:12px;padding:7px 10px">
+      <label class="lr-del" style="width:auto;padding:0 10px;cursor:pointer;white-space:nowrap;font-size:12px" title="อัปโหลดรูปจากเครื่อง">
+        📤<input type="file" accept=".png,.jpg,.jpeg,.webp" style="display:none" onchange="uploadLinkImg(event,this)">
+      </label>
+    </div>
+    <button type="button" class="lr-copy-toggle ${l.copyText?'active':''}" onclick="toggleCopyField(this)">
+      📋 <span>${l.copyText?'แก้ไขข้อความสำหรับคัดลอก':'เพิ่มข้อความสำหรับคัดลอก'}</span>
+    </button>
+    <div class="lr-copy-wrap ${l.copyText?'':'hidden'}">
+      <textarea class="lc-copy lr-copy-ta" placeholder="วางข้อความที่ต้องการให้นักเรียนคัดลอก เช่น โจทย์ คำสั่ง โค้ด ลิงก์ ฯลฯ">${esc(l.copyText||'')}</textarea>
+      <div class="lr-copy-hint">เมื่อกรอกช่องนี้ ปุ่มจะกลายเป็นปุ่ม “คัดลอกข้อความ” — ผู้ใช้กดแล้วจะมีหน้าต่างให้คัดลอก (ไม่จำเป็นต้องมี URL)</div>
+    </div>`;
+  gi('link-list').appendChild(d);
+}
+function doAddLink(){ appendLR({},document.querySelectorAll('.lr').length); renum(); initDrag(); }
+function toggleCopyField(btn){
+  const wrap=btn.nextElementSibling;
+  const open=wrap.classList.toggle('hidden')===false;
+  btn.classList.toggle('active', open);
+  if(open) wrap.querySelector('.lc-copy')?.focus();
+}
+function renum(){ let n=0; document.querySelectorAll('#link-list .lr-num').forEach(e=>{ n++; e.textContent=`ลิงก์ที่ ${String(n).padStart(2,'0')}`; }); }
+
+function initDrag(){
+  let dragSrc=null;
+  const rows=()=>[...document.querySelectorAll('#link-list .lr-data')];
+  document.querySelectorAll('#link-list .lr-data').forEach(row=>{
+    row.addEventListener('dragstart',e=>{ dragSrc=row; row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend',()=>{ row.classList.remove('dragging'); rows().forEach(r=>r.classList.remove('drag-over')); });
+    row.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; rows().forEach(r=>r.classList.remove('drag-over')); if(row!==dragSrc) row.classList.add('drag-over'); });
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(dragSrc&&dragSrc!==row){
+        const list=gi('link-list'); const allRows=rows();
+        const fromIdx=allRows.indexOf(dragSrc), toIdx=allRows.indexOf(row);
+        if(fromIdx<toIdx) list.insertBefore(dragSrc,row.nextSibling); else list.insertBefore(dragSrc,row);
+        renum();
+      }
+      rows().forEach(r=>r.classList.remove('drag-over'));
+    });
+  });
+}
+
+// ─── ANNOUNCEMENTS ───
+function renderAnns(){
+  const lst=gi('ann-list'); lst.innerHTML='';
+  (ap().announcements||[]).forEach((a,i)=>{
+    const d=document.createElement('div'); d.className='ann-adm-item';
+    d.innerHTML=`<span>${esc(a)}</span><button class="btn btn-g" onclick="rmAnn(${i})">✕</button>`;
+    lst.appendChild(d);
+  });
+}
+function doAddAnn(){
+  const t=gi('new-ann').value.trim(); if(!t) return;
+  if(!ap().announcements) ap().announcements=[];
+  ap().announcements.push(t); sv('new-ann',''); renderAnns(); renderPublic(); renderStats(); toast('เพิ่มประกาศแล้ว','ok');
+}
+function rmAnn(i){ ap().announcements.splice(i,1); renderAnns(); renderPublic(); renderStats(); }
+
+// ─── STATS ───
+function renderStats(){
+  const p=ap();
+  const links=p.links||[];
+  const total=links.reduce((s,l)=>s+(l.clicks||0),0);
+  gi('st-total').textContent=total;
+  gi('st-links').textContent=links.filter(l=>l.label||l.url).length;
+  gi('st-anns').textContent=(p.announcements||[]).length;
+  const list=gi('stat-list'); list.innerHTML='';
+  const sorted=[...links].filter(l=>l.label||l.url).sort((a,b)=>(b.clicks||0)-(a.clicks||0)).slice(0,6);
+  const max=Math.max(1,...sorted.map(l=>l.clicks||0));
+  if(sorted.length===0){ list.innerHTML='<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px">ยังไม่มีลิงก์</div>'; return; }
+  sorted.forEach(l=>{
+    const w=Math.round(((l.clicks||0)/max)*100);
+    const row=document.createElement('div'); row.className='stat-row'; row.style.flexDirection='column'; row.style.alignItems='stretch'; row.style.gap='4px';
+    row.innerHTML=`<div style="display:flex;justify-content:space-between"><span class="srl">${esc(l.label||l.url)}</span><span class="src">${l.clicks||0}</span></div><div class="stat-bar" style="width:${w}%"></div>`;
+    list.appendChild(row);
+  });
+}
+function resetClicks(){
+  if(!confirm('รีเซ็ตตัวนับคลิกทั้งหมดในห้องเรียนนี้?')) return;
+  (ap().links||[]).forEach(l=>l.clicks=0);
+  renderStats(); renderLinks(); renderPublic(); toast('รีเซ็ตตัวนับแล้ว','ok');
+}
+
+// ─── THEME ───
+function buildPresets(){
+  const row=gi('presets'); row.innerHTML='';
+  PRESETS.forEach(p=>{
+    const c=document.createElement('button'); c.className='chip';
+    c.innerHTML=`<span class="chip-dot" style="background:linear-gradient(135deg,${p.a1},${p.a2})"></span>${p.label}`;
+    c.onclick=()=>{
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on');
+      gi('ca1').value=p.a1; gi('ca2').value=p.a2; gi('cbg').value=p.bg; gi('ctx').value=p.tx;
+      syncCL();
+      ap().accent1=p.a1; ap().accent2=p.a2; ap().bgColor=p.bg; ap().textColor=p.tx;
+      applyTheme();
+    };
+    row.appendChild(c);
+  });
+}
+function doColor(){
+  syncCL();
+  ap().accent1=gi('ca1').value; ap().accent2=gi('ca2').value; ap().bgColor=gi('cbg').value; ap().textColor=gi('ctx').value;
+  applyTheme();
+}
+function syncCL(){ gi('ca1v').textContent=gi('ca1').value; gi('ca2v').textContent=gi('ca2').value; gi('cbgv').textContent=gi('cbg').value; gi('ctxv').textContent=gi('ctx').value; }
+function applyTheme(){
+  const p=pubAP(); const r=document.documentElement;
+  if(p.accent1){ r.style.setProperty('--accent',p.accent1); r.style.setProperty('--accent-soft',soften(p.accent1,0.07)); }
+  if(p.accent2){ r.style.setProperty('--accent2',p.accent2); r.style.setProperty('--gold',p.accent2); r.style.setProperty('--gold-soft',soften(p.accent2,0.12)); r.style.setProperty('--border-focus',p.accent2); }
+  if(p.bgColor){ r.style.setProperty('--bg',p.bgColor); document.body.style.background=p.bgColor; }
+  if(p.textColor) r.style.setProperty('--text',p.textColor);
+  // อัปเดตสีลูกแสงลอยให้ตรงธีม (debounce กันสร้างถี่เกินตอนเลื่อน color picker)
+  clearTimeout(applyTheme._lt); applyTheme._lt=setTimeout(()=>{ if(typeof buildLightsField==='function') buildLightsField(); }, 200);
+}
+function soften(h,a){ const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+
+// ─── ชื่อห้องเรียน: ไล่สีไหลลื่น (CSS animation + JS smooth gradient flow) ───
+// JS ขยับ "มุม + ตำแหน่ง" ของ gradient ต่อเฟรมให้ลื่นไหลกว่า CSS ล้วน
+// และไล่สีตามสีเว็บ (accent1/accent2) ที่ผู้ใช้เลือกแบบเรียลไทม์
+let _titleRAF=null, _titleT=0;
+function startTitleGradient(){
+  const el=gi('pub-title'); if(!el) return;
+  el.classList.add('grad-anim');
+  if(_titleRAF) return;                 // เริ่มลูปครั้งเดียว
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const loop=(ts)=>{
+    if(!_titleT) _titleT=ts;
+    const t=(ts-_titleT)/1000;
+    const cs=getComputedStyle(document.documentElement);
+    const a1=(cs.getPropertyValue('--accent').trim())||'#2a3b6b';
+    const a2=(cs.getPropertyValue('--gold').trim())||'#c79a3c';
+    const angle=100 + Math.sin(t*0.5)*22;            // แกว่งมุม 78°–122°
+    const pos=(Math.sin(t*0.45)*0.5+0.5)*100;        // ตำแหน่ง 0–100% นุ่มนวล
+    el.style.backgroundImage=`linear-gradient(${angle.toFixed(1)}deg, ${a1} 0%, ${a2} 28%, ${a1} 52%, ${a2} 76%, ${a1} 100%)`;
+    el.style.backgroundPosition=`${pos.toFixed(1)}% 50%`;
+    el.style.animation='none';                       // ปล่อยให้ JS คุมแทน keyframe
+    _titleRAF=requestAnimationFrame(loop);
+  };
+  _titleRAF=requestAnimationFrame(loop);
+}
+
+// ─── ฟอนต์ (อัปโหลด → base64 → @font-face) — มี 2 ชุด: ชื่อห้อง + เนื้อหา ───
+const FONT_MIME={ttf:'font/ttf',otf:'font/otf',woff:'font/woff',woff2:'font/woff2'};
+function _fontFamilyName(p){ return p&&p.fontData ? ('classFont_'+viewId()) : ''; }
+function _contentFontFamilyName(p){ return p&&p.contentFontData ? ('classContentFont_'+viewId()) : ''; }
+function applyFont(){
+  const p=pubAP();
+  const st=gi('custom-font-style')||(()=>{ const s=document.createElement('style'); s.id='custom-font-style'; document.head.appendChild(s); return s; })();
+  let css='';
+  // ฟอนต์ชื่อห้อง
+  if(p.fontData){
+    const fam=_fontFamilyName(p);
+    css+=`@font-face{font-family:'${fam}';src:url(${p.fontData});font-display:swap;}`;
+    document.documentElement.style.setProperty('--title-font',`'${fam}'`);
+  } else { document.documentElement.style.removeProperty('--title-font'); }
+  // ฟอนต์เนื้อหา
+  if(p.contentFontData){
+    const fam=_contentFontFamilyName(p);
+    css+=`@font-face{font-family:'${fam}';src:url(${p.contentFontData});font-display:swap;}`;
+    document.documentElement.style.setProperty('--content-font',`'${fam}'`);
+  } else { document.documentElement.style.removeProperty('--content-font'); }
+  st.textContent=css;
+}
+// อ่านไฟล์ฟอนต์ → data URL (พร้อม validate)
+async function _readFontFile(file, msgEl){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(!['ttf','otf','woff','woff2'].includes(ext)){ if(msgEl){msgEl.style.color='#c92a2a';msgEl.textContent='✕ รองรับเฉพาะ .ttf .otf .woff .woff2';} return null; }
+  if(file.size>2.5*1024*1024){ if(msgEl){msgEl.style.color='#c92a2a';msgEl.textContent='✕ ไฟล์ใหญ่เกิน 2.5MB — ลองแปลงเป็น .woff2 ก่อน';} return null; }
+  if(msgEl){ msgEl.style.color='var(--text-muted)'; msgEl.textContent='⏳ กำลังประมวลผลฟอนต์…'; }
+  const dataUrl=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.onerror=rej; r.readAsDataURL(file); });
+  return dataUrl.replace(/^data:[^;]*/, 'data:'+(FONT_MIME[ext]||'font/'+ext));
+}
+async function doUploadFont(e){
+  const file=e.target.files[0]; if(!file){ return; } e.target.value='';
+  const m=gi('font-up-msg');
+  try{
+    const fixed=await _readFontFile(file, m); if(!fixed) return;
+    const p=ap(); p.fontData=fixed; p.fontName=file.name;
+    applyFont(); showFontPrev(p); renderPublic();
+    m.style.color='#2f9e44'; m.textContent='✓ ใช้ฟอนต์ "'+file.name+'" แล้ว — กดบันทึกเพื่อจัดเก็บถาวร';
+  }catch(err){ m.style.color='#c92a2a'; m.textContent='✕ อ่านไฟล์ฟอนต์ไม่สำเร็จ'; }
+}
+function clearFont(){
+  const p=ap(); p.fontData=''; p.fontName='';
+  applyFont(); showFontPrev(p); renderPublic(); gi('font-up-msg').textContent='';
+  toast('ใช้ฟอนต์ชื่อห้องเริ่มต้นแล้ว','ok');
+}
+function showFontPrev(p){
+  const hint=gi('font-hint'), loaded=gi('font-loaded'), name=gi('font-name'), prev=gi('font-prev');
+  if(hint){
+    if(p.fontData){
+      hint.style.display='none'; loaded.style.display='block';
+      name.textContent='ฟอนต์: '+(p.fontName||'กำหนดเอง');
+      prev.style.fontFamily=`'${_fontFamilyName(p)}','Chonburi','Sarabun',serif`;
+      prev.textContent=(p.title||'ห้องเรียนครูนนท์')+' AaBbКก123';
+    } else { hint.style.display='block'; loaded.style.display='none'; name.textContent=''; }
+  }
+  showContentFontPrev(p);
+}
+// ─── ฟอนต์เนื้อหา ───
+async function doUploadContentFont(e){
+  const file=e.target.files[0]; if(!file){ return; } e.target.value='';
+  const m=gi('cfont-up-msg');
+  try{
+    const fixed=await _readFontFile(file, m); if(!fixed) return;
+    const p=ap(); p.contentFontData=fixed; p.contentFontName=file.name;
+    applyFont(); showContentFontPrev(p); renderPublic();
+    m.style.color='#2f9e44'; m.textContent='✓ ใช้ฟอนต์เนื้อหา "'+file.name+'" แล้ว — กดบันทึกเพื่อจัดเก็บถาวร';
+  }catch(err){ m.style.color='#c92a2a'; m.textContent='✕ อ่านไฟล์ฟอนต์ไม่สำเร็จ'; }
+}
+function clearContentFont(){
+  const p=ap(); p.contentFontData=''; p.contentFontName='';
+  applyFont(); showContentFontPrev(p); renderPublic(); gi('cfont-up-msg').textContent='';
+  toast('ใช้ฟอนต์เนื้อหาเริ่มต้นแล้ว','ok');
+}
+function showContentFontPrev(p){
+  const hint=gi('cfont-hint'), loaded=gi('cfont-loaded'), name=gi('cfont-name'), prev=gi('cfont-prev');
+  if(!hint) return;
+  if(p.contentFontData){
+    hint.style.display='none'; loaded.style.display='block';
+    name.textContent='ฟอนต์เนื้อหา: '+(p.contentFontName||'กำหนดเอง');
+    prev.style.fontFamily=`'${_contentFontFamilyName(p)}','Sarabun',sans-serif`;
+  } else { hint.style.display='block'; loaded.style.display='none'; name.textContent=''; }
+}
+
+// ─── LOGO (เลือกรูป → ครอบตัด → อัปโหลด/บันทึก) ───
+async function doUpload(e){
+  const file=e.target.files[0]; if(!file){ return; } e.target.value='';
+  // เปิดหน้าต่างครอบตัดก่อนเสมอ
+  const rd=new FileReader();
+  rd.onload=ev=>openCrop(ev.target.result, file.name);
+  rd.readAsDataURL(file);
+}
+// อัปโหลด/บันทึก "หลังจากครอบตัดเสร็จแล้ว" (รับ Blob)
+async function finalizeLogo(blob, fname){
+  const m=gi('up-msg');
+  if(DRIVE_UPLOAD_ENDPOINT){
+    blob.name = fname || 'avatar.png';
+    UpUI.open('อัปโหลดรูปประจำตัว', blob.name);
+    try{
+      const url=await uploadToDrive(blob, p=>UpUI.bar(p));
+      ap().logoUrl=url; sv('cfg-logo-url',url); showPrev(url); renderPublic();
+      UpUI.done('อัปโหลดสำเร็จ'); m.textContent='✓ อัปโหลดขึ้น Drive แล้ว'; toast('อัปโหลดรูปแล้ว','ok');
+    }catch(err){ UpUI.error(err.message); m.textContent='✕ '+err.message; }
+    return;
+  }
+  // ไม่มี GAS → เก็บเป็น data URL (local, ไม่ถาวร)
+  const rd=new FileReader();
+  rd.onload=ev=>{ ap().logoUrl=ev.target.result; sv('cfg-logo-url',''); showPrev(ev.target.result); renderPublic(); m.textContent='แสดงตัวอย่างแล้ว (local) — ตั้งค่า GAS เพื่อบันทึกถาวร'; };
+  rd.readAsDataURL(blob);
+}
+
+// ─── CROP ENGINE (ลากกรอบอิสระ + ล็อก 1:1) ───
+const Crop={ box:null, lock:false, fname:'avatar.png', drag:null };
+function openCrop(src, fname){
+  Crop.fname=fname||'avatar.png';
+  const img=gi('crop-img');
+  img.onload=()=>{ bindCropHandlers(); resetCrop(); gi('crop-modal').classList.add('show'); };
+  img.src=src;
+}
+let _cropBound=false;
+function bindCropHandlers(){
+  if(_cropBound) return; _cropBound=true;
+  const box=gi('crop-box');
+  box.addEventListener('mousedown', e=>{ if(e.target===box) cropDown(e,'move'); });
+  box.addEventListener('touchstart', e=>{ if(e.target===box) cropDown(e,'move'); }, {passive:false});
+  const map={tl:'tl',tr:'tr',bl:'bl',br:'br'};
+  box.querySelectorAll('.crop-h').forEach(h=>{
+    const mode=map[[...h.classList].find(c=>map[c])];
+    h.addEventListener('mousedown', e=>cropDown(e,mode));
+    h.addEventListener('touchstart', e=>cropDown(e,mode), {passive:false});
+  });
+}
+function closeCrop(){ gi('crop-modal').classList.remove('show'); }
+function stageRect(){ return gi('crop-stage').getBoundingClientRect(); }
+function toggleCropLock(){
+  Crop.lock=!Crop.lock;
+  const b=gi('crop-lock-btn');
+  b.textContent=Crop.lock?'🔒 1:1':'🔓 อิสระ';
+  b.classList.toggle('crop-lock-on',Crop.lock);
+  if(Crop.lock){ const s=Math.min(Crop.box.w,Crop.box.h); Crop.box.w=Crop.box.h=s; clampBox(); drawBox(); }
+}
+function resetCrop(){
+  const r=stageRect(); const side=Math.min(r.width,r.height)*0.8;
+  Crop.box={ x:(r.width-side)/2, y:(r.height-side)/2, w:side, h:side };
+  drawBox();
+}
+function clampBox(){
+  const r=stageRect(), b=Crop.box;
+  b.w=Math.max(40,Math.min(b.w,r.width)); b.h=Math.max(40,Math.min(b.h,r.height));
+  b.x=Math.max(0,Math.min(b.x,r.width-b.w)); b.y=Math.max(0,Math.min(b.y,r.height-b.h));
+}
+function drawBox(){
+  clampBox(); const b=Crop.box, el=gi('crop-box');
+  el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px'; el.style.height=b.h+'px';
+}
+function _pt(e){ const t=e.touches?e.touches[0]:e; return {x:t.clientX,y:t.clientY}; }
+function cropDown(e, mode){
+  e.preventDefault(); e.stopPropagation();
+  const p=_pt(e);
+  Crop.drag={ mode, sx:p.x, sy:p.y, ob:{...Crop.box} };
+  window.addEventListener('mousemove',cropMove); window.addEventListener('mouseup',cropUp);
+  window.addEventListener('touchmove',cropMove,{passive:false}); window.addEventListener('touchend',cropUp);
+}
+function cropMove(e){
+  if(!Crop.drag) return; e.preventDefault();
+  const p=_pt(e), d=Crop.drag, dx=p.x-d.sx, dy=p.y-d.sy, b=Crop.box, o=d.ob, r=stageRect();
+  if(d.mode==='move'){ b.x=o.x+dx; b.y=o.y+dy; }
+  else{
+    let nx=o.x,ny=o.y,nw=o.w,nh=o.h;
+    if(d.mode.includes('r')) nw=o.w+dx;
+    if(d.mode.includes('l')){ nw=o.w-dx; nx=o.x+dx; }
+    if(d.mode.includes('b')) nh=o.h+dy;
+    if(d.mode.includes('t')){ nh=o.h-dy; ny=o.y+dy; }
+    if(Crop.lock){
+      const s=Math.max(nw,nh);
+      if(d.mode.includes('l')) nx=o.x+(o.w-s); if(d.mode.includes('t')) ny=o.y+(o.h-s);
+      nw=nh=s;
+    }
+    nw=Math.max(40,nw); nh=Math.max(40,nh);
+    nx=Math.max(0,Math.min(nx,r.width-40)); ny=Math.max(0,Math.min(ny,r.height-40));
+    b.x=nx; b.y=ny; b.w=nw; b.h=nh;
+  }
+  drawBox();
+}
+function cropUp(){
+  Crop.drag=null;
+  window.removeEventListener('mousemove',cropMove); window.removeEventListener('mouseup',cropUp);
+  window.removeEventListener('touchmove',cropMove); window.removeEventListener('touchend',cropUp);
+}
+function applyCrop(){
+  const img=gi('crop-img'), r=stageRect(), b=Crop.box;
+  const sx=img.naturalWidth / r.width, sy=img.naturalHeight / r.height;
+  const cw=Math.round(b.w*sx), ch=Math.round(b.h*sy);
+  // จำกัดด้านยาวสุดไม่เกิน 1024px เพื่อไฟล์ไม่ใหญ่เกินไป
+  const maxSide=1024, scale=Math.min(1, maxSide/Math.max(cw,ch));
+  const ow=Math.max(1,Math.round(cw*scale)), oh=Math.max(1,Math.round(ch*scale));
+  const cv=document.createElement('canvas'); cv.width=ow; cv.height=oh;
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(img, b.x*sx, b.y*sy, cw, ch, 0, 0, ow, oh);
+  cv.toBlob(blob=>{
+    closeCrop();
+    if(!blob){ toast('ครอบตัดไม่สำเร็จ','err'); return; }
+    finalizeLogo(blob, (Crop.fname.replace(/\.[^.]+$/,'')||'avatar')+'.png');
+  }, 'image/png', 0.92);
+}
+function showPrev(src){ const p=gi('logo-prev'); p.src=src; p.style.display='block'; gi('logo-hint').style.display='none'; updateFavicon(src); }
+
+// ─── ภาพพื้นหลัง ───
+function applyBg(){
+  const p=pubAP(); const cover=gi('bg-cover'); if(!cover) return;
+  const op=(p.bgOpacity!=null?p.bgOpacity:0.35);
+  document.documentElement.style.setProperty('--bg-img-op', op);
+  if(p.bgImage){ cover.style.backgroundImage=`url("${p.bgImage}")`; cover.classList.add('on'); }
+  else { cover.style.backgroundImage='none'; cover.classList.remove('on'); }
+}
+function showBgPrev(src){
+  const pr=gi('bg-prev'); if(src){ pr.src=src; pr.style.display='block'; gi('bg-hint').style.display='none'; }
+  else { pr.style.display='none'; gi('bg-hint').style.display='block'; }
+}
+async function doUploadBg(e){
+  const file=e.target.files[0]; if(!file){ return; } e.target.value='';
+  const m=gi('bg-up-msg');
+  if(DRIVE_UPLOAD_ENDPOINT){
+    UpUI.open('อัปโหลดภาพพื้นหลัง', file.name);
+    try{
+      const url=await uploadToDrive(file, p=>UpUI.bar(p));
+      ap().bgImage=url; sv('cfg-bg-url',url); showBgPrev(url); applyBg();
+      UpUI.done('อัปโหลดสำเร็จ'); m.textContent='✓ อัปโหลดขึ้น Drive แล้ว'; toast('อัปโหลดภาพพื้นหลังแล้ว','ok');
+    }catch(err){ UpUI.error(err.message); m.textContent='✕ '+err.message; }
+    return;
+  }
+  const rd=new FileReader();
+  rd.onload=ev=>{ ap().bgImage=ev.target.result; sv('cfg-bg-url',''); showBgPrev(ev.target.result); applyBg(); m.textContent='แสดงตัวอย่าง (local) — ตั้งค่า GAS เพื่อบันทึกถาวร'; };
+  rd.readAsDataURL(file);
+}
+function onBgUrlInput(){ const u=gi('cfg-bg-url').value.trim(); ap().bgImage=u; showBgPrev(u); applyBg(); }
+function onBgOpacity(){ const v=parseInt(gi('cfg-bg-op').value); gi('bg-op-val').textContent=v+'%'; ap().bgOpacity=v/100; applyBg(); }
+function clearBg(){ ap().bgImage=''; sv('cfg-bg-url',''); showBgPrev(''); applyBg(); gi('bg-up-msg').textContent=''; toast('เอาภาพพื้นหลังออกแล้ว','ok'); }
+
+// ─── อัปโหลดรูปกำกับลิงก์จากเครื่อง ───
+async function uploadLinkImg(e, labelEl){
+  const file=e.target.files[0]; if(!file){ return; } e.target.value='';
+  const row=labelEl.closest('.lr-img-row');
+  const urlInput=row.querySelector('.li');
+  const prev=row.querySelector('.lr-img-preview');
+  if(DRIVE_UPLOAD_ENDPOINT){
+    UpUI.open('อัปโหลดรูปกำกับปุ่ม', file.name);
+    try{
+      const url=await uploadToDrive(file, p=>UpUI.bar(p));
+      urlInput.value=url; prev.src=url; prev.classList.add('has-img');
+      UpUI.done('อัปโหลดสำเร็จ'); toast('อัปโหลดรูปแล้ว','ok');
+    }catch(err){ UpUI.error(err.message); }
+    return;
+  }
+  const rd=new FileReader();
+  rd.onload=ev=>{ urlInput.value=ev.target.result; prev.src=ev.target.result; prev.classList.add('has-img'); toast('แสดงตัวอย่าง (local) — ตั้งค่า GAS เพื่อบันทึกถาวร','ok'); };
+  rd.readAsDataURL(file);
+}
+
+// ─── UPLOAD UI (modal + progress) ───
+const UpUI = {
+  open(title, fname){
+    gi('up-overlay').classList.add('show');
+    gi('up-icon').innerHTML='<div class="spin-outer" style="margin:0 auto"><div class="spin-inner"></div></div>';
+    gi('up-title').textContent=title||'กำลังอัปโหลด';
+    gi('up-sub').textContent='กำลังส่งรูปขึ้น Google Drive…';
+    gi('up-fname').textContent=fname||''; this.bar(0);
+  },
+  bar(p){ p=Math.max(0,Math.min(100,Math.round(p))); gi('up-bar').style.width=p+'%'; gi('up-pct').textContent=p+'%'; },
+  done(msg){ this.bar(100); gi('up-icon').innerHTML='✅'; gi('up-title').textContent=msg||'สำเร็จ'; gi('up-sub').textContent='พร้อมใช้งาน'; gi('up-fname').textContent=''; setTimeout(()=>gi('up-overlay').classList.remove('show'),900); },
+  error(msg){ gi('up-icon').innerHTML='⚠️'; gi('up-title').textContent='อัปโหลดไม่สำเร็จ'; gi('up-sub').textContent=msg||'ลองใหม่อีกครั้ง'; setTimeout(()=>gi('up-overlay').classList.remove('show'),2400); }
+};
+
+// ─── DRIVE UPLOAD — no-cors + key + poll (วิธีเดียวกับ PA_website ที่ใช้ได้ผล) ───
+async function uploadToDrive(fileOrBlob, onProgress){
+  const prog = typeof onProgress==='function' ? onProgress : ()=>{};
+  if(!DRIVE_UPLOAD_ENDPOINT) throw new Error('ยังไม่ได้ตั้งค่า GAS — ไปที่ตั้งค่าอัปโหลดรูป');
+  const MAX=10*1024*1024;
+  if(fileOrBlob.size>MAX) throw new Error('ไฟล์ใหญ่เกิน 10MB (ข้อจำกัด Apps Script)');
+  prog(2);
+  const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(fileOrBlob); });
+  prog(8);
+  const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():`${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const fileName=(fileOrBlob.name||`upload_${Date.now()}`);
+  const mimeType=fileOrBlob.type||'application/octet-stream';
+  const payload=JSON.stringify({key, filename:fileName, mimeType, data:b64, folderId:DRIVE_FOLDER_ID});
+  // (1) POST no-cors
+  let simP=8; const simTimer=setInterval(()=>{ simP=Math.min(50,simP+3); prog(simP); },220);
+  try{ await fetch(DRIVE_UPLOAD_ENDPOINT,{ method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload }); }
+  catch(e){ /* no-cors ไม่ throw */ }
+  clearInterval(simTimer); prog(52);
+  // (2) Poll GET ?key=
+  for(let i=0;i<25;i++){
+    await new Promise(r=>setTimeout(r,1200));
+    prog(Math.min(92, 52+(i/25)*40));
+    try{
+      const res=await fetch(`${DRIVE_UPLOAD_ENDPOINT}?key=${encodeURIComponent(key)}&t=${Date.now()}`);
+      if(!res.ok) continue;
+      const json=await res.json();
+      if(json && json.error) throw new Error(json.error);
+      if(json && (json.url||json.id)){ prog(100); return json.url || `https://drive.google.com/thumbnail?id=${json.id}&sz=w1600`; }
+    }catch(e){ if(e.message && /[฀-๿]/.test(e.message)) throw e; }
+  }
+  throw new Error('Upload timeout — GAS ไม่ตอบสนอง ตรวจสอบ URL และ Deploy');
+}
+
+// ─── ตรวจสุขภาพ GAS ───
+async function checkGas(){
+  const st=gi('gas-status'); const url=gi('cfg-gas').value.trim();
+  if(!url){ st.textContent=''; return; }
+  st.style.color='var(--text-muted)'; st.textContent='⏳ กำลังตรวจสอบ GAS…';
+  try{
+    const res=await fetch(`${url}?t=${Date.now()}`);
+    const j=await res.json();
+    if(j.driveOk){ st.style.color='#2f9e44'; st.textContent='✓ '+(j.message||'พร้อมใช้งาน')+' · โฟลเดอร์: '+(j.folder||'-'); }
+    else { st.style.color='#c92a2a'; st.textContent='⚠️ '+(j.message||'เข้าถึง Drive ไม่ได้'); }
+  }catch(e){ st.style.color='#c92a2a'; st.textContent='⚠️ เชื่อมต่อ GAS ไม่ได้ — ตรวจ URL และ Deploy (Anyone can access)'; }
+}
+
+// ─── DIRTY STATE (เตือนบันทึกเมื่อมีการแก้ไขค้าง) ───
+let isDirty=false;
+function markDirty(){
+  if(!adminOpen) return;          // นับเฉพาะตอนอยู่ในแผงจัดการ
+  if(switching) return;           // การสลับห้องไม่ถือเป็นการแก้ที่ผู้ใช้พิมพ์
+  isDirty=true;
+  const b=gi('unsaved-flag'); if(b) b.style.display='inline-flex';
+}
+function markClean(){
+  isDirty=false;
+  const b=gi('unsaved-flag'); if(b) b.style.display='none';
+}
+// ถามยืนยันก่อนทิ้งการแก้ไข — คืน true ถ้าออกได้
+function confirmDiscard(){
+  if(!isDirty) return true;
+  return confirm('⚠️ มีการแก้ไขที่ยังไม่ได้บันทึก\n\nหากออกตอนนี้ การเปลี่ยนแปลงจะหายไป\n\nกด "ตกลง" เพื่อออกโดยไม่บันทึก  •  กด "ยกเลิก" เพื่อกลับไปบันทึกก่อน');
+}
+// ติดตามการพิมพ์/เปลี่ยนค่าในแผงจัดการ → ตั้งสถานะ dirty
+document.addEventListener('input', e=>{ if(adminOpen && e.target.closest && e.target.closest('#adm-panel')) markDirty(); });
+document.addEventListener('change', e=>{ if(adminOpen && e.target.closest && e.target.closest('#adm-panel')) markDirty(); });
+// เตือนเมื่อปิด/รีโหลดแท็บเบราว์เซอร์ทั้ง ๆ ที่ยังไม่บันทึก
+window.addEventListener('beforeunload', e=>{
+  if(adminOpen && isDirty){ e.preventDefault(); e.returnValue=''; return ''; }
+});
+
+// ─── AUTH ───
+function doPw(){
+  const pw=gi('adm-pw').value;
+  if(pw===store.password||pw==='1234'){
+    gi('lock-wrap').style.display='none'; gi('adm-panel').style.display='block'; gi('pw-err').style.display='none';
+    adminOpen=true; markClean();
+    buildProfileTabs(); fillForm(); renderLinks(); renderAnns(); renderStats();
+  } else {
+    gi('pw-err').style.display='block';
+    gi('adm-pw').style.borderColor='#c92a2a'; gi('adm-pw').style.boxShadow='0 0 0 4px rgba(201,42,42,0.12)';
+    setTimeout(()=>{ gi('adm-pw').style.borderColor=''; gi('adm-pw').style.boxShadow=''; },1500);
+  }
+}
+function doLogout(){
+  if(!confirmDiscard()) return;     // เตือนบันทึกก่อนออกจากแผงจัดการ
+  adminOpen=false; markClean();
+  gi('lock-wrap').style.display='flex'; gi('adm-panel').style.display='none';
+  gi('adm-pw').value=''; gi('pw-err').style.display='none';
+  switchTab('public',document.querySelector('.t-btn'));
+}
+
+// ─── TABS ───
+function switchTab(tab,btn){
+  // ออกจากหน้าจัดการไปหน้าสาธารณะทั้งที่ยังไม่บันทึก → เตือนก่อน
+  if(tab==='public' && adminOpen && isDirty && gi('adm-panel') && gi('adm-panel').style.display==='block'){
+    if(!confirmDiscard()) return;
+    adminOpen=false; markClean();
+    gi('lock-wrap').style.display='flex'; gi('adm-panel').style.display='none';
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));
+  gi('page-'+tab).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ─── FAVICON ───
+function updateFavicon(url){
+  const fav=document.getElementById('favicon'); if(!fav) return;
+  if(url){
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=64; const ctx=c.getContext('2d'); ctx.beginPath(); ctx.arc(32,32,32,0,Math.PI*2); ctx.clip(); ctx.drawImage(img,0,0,64,64); fav.href=c.toDataURL('image/png'); }catch{ fav.href=url; } };
+    img.onerror=()=>{ fav.href=url; }; img.src=url;
+  } else { fav.href=''; }
+}
+
+// ─── LINK IMG PREVIEW ───
+function previewLinkImg(input){
+  const prev=input.closest('.lr-img-row').querySelector('.lr-img-preview');
+  const url=input.value.trim();
+  if(url){ prev.src=url; prev.classList.add('has-img'); } else { prev.src=''; prev.classList.remove('has-img'); }
+}
+
+// ─── QR / SHARE ───
+let _qr=null;
+// ลิงก์ที่ใช้แชร์: ถ้ามีหลายห้อง → ผูกกับห้องที่กำลังดู/แก้ไข (เปิดตรงห้องนั้น)
+function shareUrl(){
+  const many=Object.keys(store.profiles).length>1;
+  if(!many) return location.origin+location.pathname;   // ห้องเดียว: ลิงก์สะอาด
+  return profileLink(viewId());
+}
+function openQR(){
+  const m=gi('qr-modal'); m.classList.add('show');
+  gi('qr-title').textContent=pubAP().title||'แชร์ห้องเรียน';
+  const url=shareUrl();
+  try{
+    _qr=new QRious({ element:gi('qr-canvas'), value:url, size:230, foreground:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#2a3b6b', background:'#ffffff', level:'M' });
+  }catch(e){ toast('สร้าง QR ไม่สำเร็จ','err'); }
+}
+function closeQR(){ gi('qr-modal').classList.remove('show'); }
+gi('qr-modal').addEventListener('click',e=>{ if(e.target.id==='qr-modal') closeQR(); });
+gi('crop-modal').addEventListener('click',e=>{ if(e.target.id==='crop-modal') closeCrop(); });
+
+// ─── ป๊อปอัปประกาศ (เด้งครั้งเดียวเมื่อเปิดหน้าเว็บ) ───
+let _annModalShown=false;
+function maybeShowAnnModal(){
+  if(_annModalShown) return;
+  // เด้งเฉพาะหน้าสาธารณะ (ไม่เด้งตอนอยู่ในแผงจัดการ)
+  if(gi('adm-panel') && gi('adm-panel').style.display==='block') return;
+  const anns=(pubAP().announcements||[]).filter(a=>a&&a.trim());
+  if(!anns.length) return;
+  _annModalShown=true;
+  const list=gi('ann-modal-list'); list.innerHTML='';
+  anns.forEach(a=>{
+    const d=document.createElement('div'); d.className='ann-modal-item';
+    d.innerHTML=`<span class="am-dot"></span><div class="am-txt">${esc(a)}</div>`;
+    list.appendChild(d);
+  });
+  gi('ann-modal-title').textContent = anns.length>1 ? `ประกาศจากห้องเรียน (${anns.length})` : 'ประกาศจากห้องเรียน';
+  setTimeout(()=>gi('ann-modal').classList.add('show'), 350);
+}
+function closeAnnModal(){ gi('ann-modal').classList.remove('show'); }
+gi('ann-modal').addEventListener('click',e=>{ if(e.target.id==='ann-modal') closeAnnModal(); });
+function downloadQR(){
+  try{ const a=document.createElement('a'); a.download=(ap().title||'qr')+'.png'; a.href=gi('qr-canvas').toDataURL('image/png'); a.click(); toast('บันทึก QR แล้ว','ok'); }
+  catch{ toast('บันทึกไม่สำเร็จ','err'); }
+}
+
+// ─── พิมพ์ QR แจกนักเรียน (เอกสาร A4) ───
+function printQR(){
+  const p=pubAP();
+  const cs=getComputedStyle(document.documentElement);
+  const accent=(cs.getPropertyValue('--accent').trim())||'#2a3b6b';
+  const gold=(cs.getPropertyValue('--gold').trim())||'#c79a3c';
+  const accent3='#8c2f2f';
+  const bg=(cs.getPropertyValue('--bg').trim())||'#f5efe1';
+  const surface=(cs.getPropertyValue('--surface').trim())||'#fffdf7';
+  const text=(cs.getPropertyValue('--text').trim())||'#2b2419';
+  const url=shareUrl();
+  const title=p.title||'ห้องเรียนครูนนท์';
+  const teacher=p.developer||'';
+  const sub=p.subtitle||'';
+  const logo=p.logoUrl||'';
+
+  // สร้าง QR ความละเอียดสูงสำหรับพิมพ์
+  let qrData='';
+  try{
+    const c=document.createElement('canvas');
+    new QRious({ element:c, value:url, size:760, foreground:accent, background:'#ffffff', level:'H' });
+    qrData=c.toDataURL('image/png');
+  }catch(e){ qrData=gi('qr-canvas').toDataURL('image/png'); }
+
+  const flower='https://nonthaphathr.github.io/uploadimg/thaiflower.png';
+  const logoHtml = logo
+    ? `<img class="logo" src="${esc(logo)}" alt="logo" referrerpolicy="no-referrer" onerror="this.onerror=null;this.outerHTML='<div class=\\'logo logo-ph\\'>๛</div>'">`
+    : `<div class="logo logo-ph">๛</div>`;
+
+  const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>${esc(title)} — QR แจกนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{ size:A4 portrait; margin:0; }
+  body{ font-family:'Sarabun',sans-serif; background:#e9e2d0; color:${text}; }
+  .sheet{
+    width:210mm; height:296mm; margin:0 auto; position:relative;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, ${hexA(gold,0.12)}, transparent 70%),
+      radial-gradient(ellipse 80% 55% at 100% 100%, ${hexA(accent,0.08)}, transparent 70%),
+      linear-gradient(160deg, ${bg}, ${mix(bg)});
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:26mm 24mm 30mm; overflow:hidden;
+  }
+  /* เส้นกรอบทองคู่ */
+  .frame{ position:absolute; inset:14mm; border:2.5px solid ${gold}; border-radius:10mm; pointer-events:none; }
+  .frame::after{ content:''; position:absolute; inset:3.5mm; border:1px solid ${hexA(accent,0.4)}; border-radius:8mm; }
+  /* มุมลายทอง 4 มุม */
+  .corner{ position:absolute; width:34mm; height:34mm; opacity:0.9; }
+  .corner svg{ width:100%; height:100%; }
+  .c-tl{ top:9mm; left:9mm; }
+  .c-tr{ top:9mm; right:9mm; transform:scaleX(-1); }
+  .c-bl{ bottom:9mm; left:9mm; transform:scaleY(-1); }
+  .c-br{ bottom:9mm; right:9mm; transform:scale(-1); }
+  /* ดอกไม้จางมุม */
+  .deco-fl{ position:absolute; width:30mm; height:30mm; opacity:0.10; }
+  .df1{ top:36mm; right:20mm; } .df2{ bottom:40mm; left:20mm; transform:rotate(40deg); }
+
+  .inner{ position:relative; z-index:2; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; }
+  .logo{ width:36mm; height:36mm; border-radius:50%; object-fit:cover; border:3.5px solid ${surface};
+         box-shadow:0 3mm 9mm ${hexA(accent,0.25)}, 0 0 0 2px ${gold}; background:#f3ebd6; }
+  .logo-ph{ display:flex; align-items:center; justify-content:center; font-family:'Sarabun',sans-serif; font-size:19mm; color:${accent}; }
+  .title{ font-family:'Sarabun',sans-serif; font-weight:700; font-size:26pt; color:${accent}; margin-top:5mm; line-height:1.25; }
+  .teacher{ font-family:'Sarabun',sans-serif; font-size:15pt; color:${accent3}; margin-top:2.5mm; font-weight:600; }
+  .sub{ font-family:'Sarabun',sans-serif; font-size:11.5pt; color:${text}; opacity:0.7; margin-top:1.5mm; max-width:150mm; }
+
+  .rule{ display:flex; align-items:center; justify-content:center; width:100mm; margin:5mm 0 5mm; }
+  .rule .ln{ flex:1; height:1.5px; background:linear-gradient(90deg,transparent,${gold}); }
+  .rule .ln.r{ background:linear-gradient(90deg,${gold},transparent); }
+  .rule .mk{ font-family:'Sarabun',sans-serif; color:${gold}; font-size:15pt; margin:0 5mm; }
+
+  .qr-wrap{ position:relative; padding:6mm; background:#fff; border-radius:6mm; border:2px solid ${gold};
+            box-shadow:0 4mm 12mm ${hexA(accent,0.18)}; }
+  .qr-wrap img{ width:66mm; height:66mm; display:block; }
+  .qr-corner{ position:absolute; width:8mm; height:8mm; border:2.5px solid ${accent}; }
+  .qc1{ top:-1px; left:-1px; border-right:none; border-bottom:none; border-radius:4mm 0 0 0; }
+  .qc2{ top:-1px; right:-1px; border-left:none; border-bottom:none; border-radius:0 4mm 0 0; }
+  .qc3{ bottom:-1px; left:-1px; border-right:none; border-top:none; border-radius:0 0 0 4mm; }
+  .qc4{ bottom:-1px; right:-1px; border-left:none; border-top:none; border-radius:0 0 4mm 0; }
+
+  .scan-label{ margin-top:6mm; font-size:14pt; font-weight:600; color:${accent}; }
+  .desc{ margin-top:3mm; font-size:11.5pt; color:${text}; opacity:0.85; line-height:1.7; max-width:150mm; }
+  .url-pill{ margin-top:5mm; font-size:10pt; color:${accent}; background:${hexA(gold,0.14)};
+             border:1px solid ${hexA(gold,0.4)}; border-radius:30px; padding:2.5mm 8mm; word-break:break-all; max-width:160mm; }
+  .foot{ position:absolute; bottom:6mm; left:0; right:0; text-align:center; font-size:9pt; color:${text}; opacity:0.5; z-index:2; }
+
+  @media print{ body{ background:#fff; } .no-print{ display:none !important; } }
+  .toolbar{ position:fixed; top:10px; right:10px; z-index:99; display:flex; gap:8px; }
+  .toolbar button{ font-family:'Sarabun',sans-serif; font-size:13px; font-weight:600; padding:9px 18px; border-radius:10px; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.18); }
+  .tb-print{ background:${accent}; color:#fff; }
+  .tb-close{ background:#fff; color:${text}; border:1.5px solid #ccc; }
+</style></head>
+<body>
+  <div class="toolbar no-print">
+    <button class="tb-print" onclick="window.print()">🖨 พิมพ์</button>
+    <button class="tb-close" onclick="window.close()">ปิด</button>
+  </div>
+  <div class="sheet">
+    <div class="frame"></div>
+    ${cornerSvg(gold,accent)}
+    <img class="deco-fl df1" src="${flower}" referrerpolicy="no-referrer">
+    <img class="deco-fl df2" src="${flower}" referrerpolicy="no-referrer">
+    <div class="inner">
+      ${logoHtml}
+      <div class="title">${esc(title)}</div>
+      ${teacher?`<div class="teacher">พัฒนาโดย ${esc(teacher)}</div>`:''}
+      ${sub?`<div class="sub">${esc(sub)}</div>`:''}
+      <div class="rule"><span class="ln"></span><span class="mk">๛</span><span class="ln r"></span></div>
+      <div class="qr-wrap">
+        <span class="qr-corner qc1"></span><span class="qr-corner qc2"></span>
+        <span class="qr-corner qc3"></span><span class="qr-corner qc4"></span>
+        <img src="${qrData}" alt="QR">
+      </div>
+      <div class="scan-label">📱 สแกนเพื่อเข้าห้องเรียน</div>
+      <div class="desc">ใช้กล้องมือถือสแกน QR Code ด้านบน เพื่อเข้าสู่ ${esc(title)}<br>รวมลิงก์สื่อการสอน ใบงาน และช่องทางติดต่อทั้งหมดไว้ในที่เดียว</div>
+      <div class="url-pill">${esc(url)}</div>
+    </div>
+    <div class="foot">${esc(title)} · พิมพ์เมื่อ ${new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})}</div>
+  </div>
+  <script>
+    // รอรูปโหลดเสร็จก่อนเปิดหน้าต่างพิมพ์อัตโนมัติ
+    window.addEventListener('load',function(){ setTimeout(function(){ try{window.focus();}catch(e){} }, 300); });
+  <\/script>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){ toast('เบราว์เซอร์บล็อกป๊อปอัพ — อนุญาตแล้วลองใหม่','err'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  toast('เปิดเอกสารพิมพ์แล้ว','ok');
+}
+// helper: hex → rgba
+function hexA(h,a){ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
+// helper: ผสมสีพื้นหลังให้เข้มขึ้นเล็กน้อย
+function mix(h){ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); let r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); r=Math.max(0,r-14);g=Math.max(0,g-16);b=Math.max(0,b-22); return `rgb(${r},${g},${b})`; }
+// helper: SVG มุมลายทอง 4 มุม
+function cornerSvg(gold,accent){
+  const one=`<svg viewBox="0 0 100 100"><path d="M6 94 V34 C6 18 18 6 34 6 H94" fill="none" stroke="${gold}" stroke-width="3"/><path d="M22 94 C22 56 56 22 94 22" fill="none" stroke="${accent}" stroke-width="1.4"/><circle cx="34" cy="34" r="4" fill="${gold}"/></svg>`;
+  return `<div class="corner c-tl">${one}</div><div class="corner c-tr">${one}</div><div class="corner c-bl">${one}</div><div class="corner c-br">${one}</div>`;
+}
+function copyLink(){
+  const url=shareUrl();
+  navigator.clipboard.writeText(url).then(()=>toast('คัดลอกลิงก์แล้ว','ok')).catch(()=>{
+    const t=document.createElement('input'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); toast('คัดลอกลิงก์แล้ว','ok');
+  });
+}
+// ─── แชร์ลิงก์เปิดตรงห้องที่กำลังแก้ไข (แอดมิน) ───
+function copyProfileLink(){
+  const url=profileLink(store.activeProfile);
+  const done=()=>toast('คัดลอกลิงก์ห้องนี้แล้ว ✓','ok');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>_fallbackCopy(url,done));
+  } else _fallbackCopy(url,done);
+}
+function openProfileLink(){ window.open(profileLink(store.activeProfile),'_blank','noopener'); }
+function _fallbackCopy(text,done){
+  const t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0';
+  document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} t.remove(); done&&done();
+}
+
+// ─── COPY TEXT MINI MODAL ───
+function openCopyModal(title, text){
+  gi('copy-modal-title').textContent = title || 'คัดลอกข้อความ';
+  const ta=gi('copy-modal-ta'); ta.value = text || '';
+  const btn=gi('copy-modal-btn'); btn.querySelector('span').textContent='📋 คัดลอกข้อความ';
+  gi('copy-modal').classList.add('show');
+}
+function closeCopyModal(){ gi('copy-modal').classList.remove('show'); }
+function doCopyModalText(){
+  const ta=gi('copy-modal-ta'); const text=ta.value;
+  const done=()=>{ const b=gi('copy-modal-btn'); b.querySelector('span').textContent='✓ คัดลอกแล้ว'; toast('คัดลอกข้อความแล้ว','ok'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{ ta.select(); document.execCommand('copy'); done(); });
+  } else { ta.select(); document.execCommand('copy'); done(); }
+}
+gi('copy-modal').addEventListener('click',e=>{ if(e.target.id==='copy-modal') closeCopyModal(); });
+
+// ─── CLICK TRANSITION ───
+function playLinkTransition(e, label, url) {
+  const overlay=gi('click-overlay'), ripple=gi('co-ripple'), logoImg=gi('co-logo-img'), logoPh=gi('co-logo-ph'), dest=gi('co-dest');
+  if(ap().logoUrl){ logoImg.src=ap().logoUrl; logoImg.style.display='block'; logoPh.style.display='none'; }
+  else { logoImg.style.display='none'; logoPh.style.display='flex'; }
+  dest.textContent=label;
+  const cx=e.clientX, cy=e.clientY;
+  const maxD=Math.hypot(window.innerWidth,window.innerHeight)*2.5;
+  Object.assign(ripple.style,{ width:maxD+'px', height:maxD+'px', left:(cx-maxD/2)+'px', top:(cy-maxD/2)+'px', transform:'scale(0)', opacity:'0.5' });
+  overlay.querySelectorAll('.co-particle').forEach(p=>p.remove());
+  const style=getComputedStyle(document.documentElement);
+  const colors=[ style.getPropertyValue('--accent').trim()||'#2a3b6b', style.getPropertyValue('--gold').trim()||'#c79a3c', '#e3c570', '#ffffff' ];
+  for(let i=0;i<24;i++){
+    const p=document.createElement('div'); p.className='co-particle';
+    const angle=(i/24)*360+Math.random()*15, dist=50+Math.random()*130;
+    const tx=(Math.cos(angle*Math.PI/180)*dist).toFixed(1)+'px', ty=(Math.sin(angle*Math.PI/180)*dist).toFixed(1)+'px';
+    const sz=5+Math.random()*8, delay=(i*0.02).toFixed(3)+'s', dur=(0.5+Math.random()*0.35).toFixed(3)+'s';
+    p.style.cssText=`left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;background:${colors[i%colors.length]};--tx:${tx};--ty:${ty};animation:particleBurst ${dur} cubic-bezier(.2,.8,.3,1) ${delay} both;`;
+    overlay.appendChild(p);
+  }
+  overlay.classList.remove('running'); void overlay.offsetWidth; overlay.classList.add('running');
+  setTimeout(()=>{ window.open(url,'_blank','noopener'); },750);
+  setTimeout(()=>{ overlay.classList.remove('running'); },1250);
+}
+
+// ─── EXPORT / IMPORT XLSX ───
+function doExportXlsx(){
+  if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด','err'); return; }
+  collectForm(); const p=ap(); const wb=XLSX.utils.book_new();
+  const linksData=[['ลำดับ','ชื่อปุ่ม','URL','URL รูปภาพ','ข้อความคัดลอก','จำนวนคลิก']];
+  (p.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'', l.copyText||'', l.clicks||0]); });
+  const wsLinks=XLSX.utils.aoa_to_sheet(linksData); wsLinks['!cols']=[{wch:8},{wch:30},{wch:50},{wch:50},{wch:50},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsLinks, 'ลิงก์');
+  const annData=[['ลำดับ','ข้อความประกาศ']];
+  (p.announcements||[]).forEach((a,i)=>{ annData.push([i+1, a]); });
+  const wsAnn=XLSX.utils.aoa_to_sheet(annData); wsAnn['!cols']=[{wch:8},{wch:80}];
+  XLSX.utils.book_append_sheet(wb, wsAnn, 'ประกาศ');
+  const settingsData=[['การตั้งค่า','ค่า'],['ชื่อโปรไฟล์',p.name||''],['ชื่อเว็บไซต์',p.title||''],['คำอธิบาย',p.subtitle||''],['ข้อความท้ายหน้า',p.footer||''],['ครูผู้พัฒนา',p.developer||''],['URL โลโก้',p.logoUrl||''],['URL ภาพพื้นหลัง',p.bgImage||''],['ความจางพื้นหลัง',(p.bgOpacity!=null?p.bgOpacity:0.35)],['สีหลัก (accent1)',p.accent1||''],['สีรอง (accent2)',p.accent2||''],['สีพื้นหลัง',p.bgColor||''],['สีข้อความ',p.textColor||'']];
+  const wsSet=XLSX.utils.aoa_to_sheet(settingsData); wsSet['!cols']=[{wch:25},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, wsSet, 'ตั้งค่า');
+  const fname=`ห้องเรียนครูนนท์_${(p.name||'profile').replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname); toast('Export สำเร็จ','ok');
+}
+function doImportXlsx(e){
+  const file=e.target.files[0]; if(!file) return; e.target.value='';
+  if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด','err'); return; }
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'}); const p=ap(); let imported=0;
+      const wsLinks=wb.Sheets['ลิงก์'];
+      if(wsLinks){
+        const rows=XLSX.utils.sheet_to_json(wsLinks,{header:1}); const newLinks=[];
+        rows.slice(1).forEach(r=>{ if(r.length>=2){ const label=String(r[1]||'').trim(),url=String(r[2]||'').trim(),imgUrl=String(r[3]||'').trim(),copyText=String(r[4]||'').trim(),clicks=parseInt(r[5])||0; if(label||url||copyText) newLinks.push({label,url,imgUrl,copyText,clicks}); } });
+        if(newLinks.length){ p.links=newLinks; imported++; }
+      }
+      const wsAnn=wb.Sheets['ประกาศ'];
+      if(wsAnn){ const rows=XLSX.utils.sheet_to_json(wsAnn,{header:1}); const newAnns=[]; rows.slice(1).forEach(r=>{ if(r[1]) newAnns.push(String(r[1]).trim()); }); if(newAnns.length){ p.announcements=newAnns; imported++; } }
+      const wsSet=wb.Sheets['ตั้งค่า'];
+      if(wsSet){
+        const rows=XLSX.utils.sheet_to_json(wsSet,{header:1}); const map={};
+        rows.slice(1).forEach(r=>{ if(r[0]&&r[1]!==undefined) map[String(r[0]).trim()]=String(r[1]||'').trim(); });
+        if(map['ชื่อโปรไฟล์']) p.name=map['ชื่อโปรไฟล์'];
+        if(map['ชื่อเว็บไซต์']) p.title=map['ชื่อเว็บไซต์'];
+        if(map['คำอธิบาย']) p.subtitle=map['คำอธิบาย'];
+        if(map['ข้อความท้ายหน้า']) p.footer=map['ข้อความท้ายหน้า'];
+        if(map['ครูผู้พัฒนา']!==undefined) p.developer=map['ครูผู้พัฒนา'];
+        if(map['URL โลโก้']) p.logoUrl=map['URL โลโก้'];
+        if(map['URL ภาพพื้นหลัง']!==undefined) p.bgImage=map['URL ภาพพื้นหลัง'];
+        if(map['ความจางพื้นหลัง']!==undefined && map['ความจางพื้นหลัง']!=='') p.bgOpacity=parseFloat(map['ความจางพื้นหลัง'])||0.35;
+        if(map['สีหลัก (accent1)']) p.accent1=map['สีหลัก (accent1)'];
+        if(map['สีรอง (accent2)']) p.accent2=map['สีรอง (accent2)'];
+        if(map['สีพื้นหลัง']) p.bgColor=map['สีพื้นหลัง'];
+        if(map['สีข้อความ']) p.textColor=map['สีข้อความ'];
+        imported++;
+      }
+      if(imported===0){ toast('ไม่พบข้อมูลในไฟล์','err'); return; }
+      fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs(); renderStats();
+      markDirty();   // ยังไม่บันทึกขึ้น Firebase → เตือนให้กดบันทึก
+      toast(`Import สำเร็จ! (${imported} ชีท) — อย่าลืมกดบันทึก`,'ok');
+    }catch(err){ toast('อ่านไฟล์ไม่ได้: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── BACKUP / RESTORE (JSON — ทั้งเว็บ ทุกห้องเรียน) ───
+const BACKUP_VERSION = 1;
+function doExportJson(){
+  try{
+    if(adminOpen) collectForm();   // เก็บค่าที่กำลังแก้ก่อน เพื่อ backup ให้ตรงล่าสุด
+    const backup = {
+      _type:'krunon-classroom-backup',
+      _version:BACKUP_VERSION,
+      _exportedAt:new Date().toISOString(),
+      _profileCount:Object.keys(store.profiles||{}).length,
+      data:structuredClone(store)
+    };
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`ห้องเรียนครูนนท์_สำรองข้อมูล_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    toast('สำรองข้อมูลทั้งเว็บสำเร็จ (.json)','ok');
+  }catch(e){ toast('สำรองข้อมูลไม่สำเร็จ: '+e.message,'err'); }
+}
+async function doImportJson(e){
+  const file=e.target.files[0]; if(!file) return; e.target.value='';
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      // รองรับทั้งไฟล์ที่ห่อ {_type,data} และไฟล์ store ดิบ
+      const incoming = (parsed && parsed.data && parsed.data.profiles) ? parsed.data
+                     : (parsed && parsed.profiles) ? parsed : null;
+      if(!incoming || !incoming.profiles || typeof incoming.profiles!=='object' || !Object.keys(incoming.profiles).length){
+        toast('ไฟล์สำรองไม่ถูกต้อง (ไม่พบข้อมูลห้องเรียน)','err'); return;
+      }
+      const n=Object.keys(incoming.profiles).length;
+      const when = parsed._exportedAt ? new Date(parsed._exportedAt).toLocaleString('th-TH') : 'ไม่ทราบเวลา';
+      if(!confirm(`กู้คืนข้อมูลทั้งเว็บจากไฟล์สำรอง?\n\n• ห้องเรียน: ${n} ห้อง\n• สำรองเมื่อ: ${when}\n\n⚠️ ข้อมูลปัจจุบันทั้งหมดจะถูกแทนที่และบันทึกขึ้น Firebase\n\nกด OK เพื่อกู้คืน`)) return;
+      switching=true;   // กัน snapshot มาทับระหว่างกู้คืน
+      try{
+        // สร้าง store ใหม่จากไฟล์ พร้อมเติมค่า default ที่อาจขาด
+        store.profiles=incoming.profiles;
+        store.activeProfile=(incoming.activeProfile && incoming.profiles[incoming.activeProfile])
+                            ? incoming.activeProfile : Object.keys(incoming.profiles)[0];
+        if(incoming.password!==undefined) store.password=incoming.password;
+        store.gasEndpoint=incoming.gasEndpoint||'';
+        store.driveFolderId=incoming.driveFolderId||'';
+        syncDriveCfg();
+        const ok=await persistStore();   // เขียนทั้งก้อนขึ้น Firebase
+        fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs(); renderStats();
+        markClean();
+        toast(ok?`กู้คืนสำเร็จ! (${n} ห้องเรียน)`:`กู้คืนในเครื่องแล้ว แต่ซิงก์ Firebase ไม่สำเร็จ`, ok?'ok':'err');
+      } finally {
+        setTimeout(()=>{ switching=false; }, 600);
+      }
+    }catch(err){ toast('อ่านไฟล์ JSON ไม่ได้: '+err.message,'err'); }
+  };
+  reader.readAsText(file);
+}
+function doClearAll(){
+  if(!confirm(`⚠️ ล้างข้อมูลห้องเรียน "${ap().name||'นี้'}"?\n\nระบบจะ Export ข้อมูลปัจจุบันให้ก่อน แล้วจึงลบลิงก์และประกาศทั้งหมด\n\nกด OK เพื่อยืนยัน`)) return;
+  doExportXlsx();
+  ap().links=[]; ap().announcements=[];
+  renderLinks(); renderAnns(); renderPublic(); renderStats();
+  toast('ล้างข้อมูลแล้ว (มีไฟล์ backup)','ok');
+}
+
+// ─── PROFILE MANAGEMENT ───
+function buildProfileTabs(){
+  const container=gi('ps-tabs'); if(!container) return; container.innerHTML='';
+  const hdr=gi('adm-profile-name'); if(hdr) hdr.textContent=ap().name||'ห้องเรียนหลัก';
+  Object.entries(store.profiles).forEach(([id,p])=>{
+    const btn=document.createElement('div'); btn.className='ps-tab'+(id===store.activeProfile?' active':''); btn.dataset.id=id;
+    const liveIcon=id===store.activeProfile?'<span class="ps-live-dot"></span>':'';
+    btn.innerHTML=`${liveIcon}<span class="ps-tab-name" contenteditable="${id===store.activeProfile?'true':'false'}" onblur="renameProfile('${id}',this.textContent)" onclick="event.stopPropagation()" style="outline:none;min-width:20px" title="${id===store.activeProfile?'คลิกเพื่อแก้ชื่อ':''}">${esc(p.name||'ห้องเรียน')}</span><button class="ps-del" onclick="event.stopPropagation();deleteProfile('${id}')" title="ลบห้องเรียนนี้">✕</button>`;
+    btn.addEventListener('click',()=>switchProfile(id));
+    container.appendChild(btn);
+  });
+}
+async function switchProfile(id){
+  if(switching) return;                         // กันกดรัว/กดซ้อน
+  if(!store.profiles[id]) { toast('ไม่พบห้องเรียนนี้','err'); return; }
+  if(id===store.activeProfile){ fillForm(); renderLinks(); renderAnns(); return; }
+  if(!configLoaded){ toast('กำลังโหลดข้อมูล… ลองอีกครั้ง','err'); return; }
+  switching=true;
+  try{
+    // 1) เก็บค่าที่กำลังแก้ของห้องเดิมก่อน (กันข้อมูลที่พิมพ์ค้างหาย)
+    if(adminOpen) collectForm();
+    // 2) สลับห้อง
+    store.activeProfile=id;
+    // 3) วาดฟอร์ม/หน้าใหม่ทันที (ผู้ใช้เห็นผลทันที ไม่ต้องรอเครือข่าย)
+    fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs(); renderStats();
+    toast(`เปลี่ยนเป็น: ${store.profiles[id].name||id}`,'ok');
+    // 4) บันทึกขึ้น Firebase ให้ activeProfile + ค่าที่แก้ค้างถาวร (กันข้อมูลหายหลังรีเฟรช)
+    const ok=await persistStore();
+    if(ok) markClean();
+  } finally {
+    // ปลดล็อกหลังหน่วงสั้น ๆ เพื่อให้ snapshot echo ผ่านไปก่อน
+    setTimeout(()=>{ switching=false; }, 600);
+  }
+}
+async function doNewProfile(){
+  const name=prompt('ชื่อห้องเรียนใหม่ (เช่น ม.4/1, ชุมนุมวรรณคดี):',''); if(!name||!name.trim()) return;
+  if(adminOpen) collectForm();                  // กันค่าห้องปัจจุบันที่แก้ค้างหาย
+  const id='p'+Date.now();
+  store.profiles[id]={ name:name.trim(), ...structuredClone(DEFAULT_PROFILE) };
+  await switchProfile(id);
+}
+async function renameProfile(id,newName){
+  const n=(newName||'').trim(); if(!n||!store.profiles[id]) return;
+  if(store.profiles[id].name===n) return;
+  store.profiles[id].name=n; buildProfileTabs(); renderPublic();
+  await persistStore();                         // เซฟชื่อใหม่ทันที
+}
+async function deleteProfile(id){
+  const keys=Object.keys(store.profiles);
+  if(keys.length<=1){ toast('ต้องมีอย่างน้อย 1 ห้องเรียน','err'); return; }
+  const name=store.profiles[id]?.name||id;
+  if(!confirm(`ลบห้องเรียน "${name}" ?\n\nข้อมูลลิงก์และประกาศทั้งหมดในห้องนี้จะหายไป`)) return;
+  switching=true;
+  try{
+    delete store.profiles[id];
+    if(store.activeProfile===id) store.activeProfile=Object.keys(store.profiles)[0];
+    fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs(); renderStats();
+    await persistStore();                        // เซฟการลบทันที กันห้องที่ลบกลับมา
+    markClean();
+    toast(`ลบห้องเรียน "${name}" แล้ว`,'ok');
+  } finally {
+    setTimeout(()=>{ switching=false; }, 600);
+  }
+}
+
+// ─── ดอกไม้ไทยลอยพื้นหลัง ───
+function buildFlowerField(){
+  const field=gi('flower-field'); if(!field) return; field.innerHTML='';
+  const anims=['flFloat','flFloat2','flSpin'];
+  const N = window.innerWidth<640 ? 9 : 16;
+  for(let i=0;i<N;i++){
+    const f=document.createElement('span'); f.className='flower';
+    const size=22+Math.random()*54;
+    f.style.width=size+'px'; f.style.height=size+'px';
+    f.style.left=(Math.random()*100)+'%';
+    f.style.top=(Math.random()*100)+'%';
+    f.style.opacity=(0.06+Math.random()*0.13).toFixed(2);
+    const dur=(14+Math.random()*20).toFixed(1);
+    const delay=(-Math.random()*20).toFixed(1);
+    f.style.animation=`${anims[i%anims.length]} ${dur}s ease-in-out ${delay}s infinite`;
+    field.appendChild(f);
+  }
+}
+window.addEventListener('load', buildFlowerField);
+let _flResize; window.addEventListener('resize',()=>{ clearTimeout(_flResize); _flResize=setTimeout(()=>{ buildFlowerField(); buildLightsField(); },400); });
+
+// ─── Floating lights (ลูกแสงลอย · สีตามธีมที่เลือก) ───
+function buildLightsField(){
+  const field=gi('lights-field'); if(!field) return; field.innerHTML='';
+  const cs=getComputedStyle(document.documentElement);
+  const a1=(cs.getPropertyValue('--accent').trim())||'#2a3b6b';
+  const a2=(cs.getPropertyValue('--gold').trim())||'#c79a3c';
+  // ผสมสีให้ลูกแสงสว่างขึ้นเล็กน้อยเพื่อให้เห็นชัดบนพื้นจาง
+  const palette=[a2,a2,a1,_lighten(a2,28),_lighten(a1,22)];
+  const N = window.innerWidth<640 ? 14 : 22;
+  for(let i=0;i<N;i++){
+    const o=document.createElement('span'); o.className='light-orb';
+    const size=8+Math.random()*30;                 // 8–38px
+    o.style.width=size+'px'; o.style.height=size+'px';
+    o.style.left=(Math.random()*100)+'%';
+    o.style.top=(80+Math.random()*40)+'%';          // เริ่มจากด้านล่างแล้วลอยขึ้น
+    o.style.setProperty('--orb-color', palette[i%palette.length]);
+    o.style.setProperty('--orb-op', (0.45+Math.random()*0.4).toFixed(2));
+    o.style.setProperty('--drift', ((Math.random()*2-1)*60).toFixed(0)+'px');
+    o.style.setProperty('--glow', (14+Math.random()*22).toFixed(0)+'px');
+    const rise=(13+Math.random()*16).toFixed(1);    // 13–29s ลอยขึ้นช้า ๆ
+    const pulse=(3+Math.random()*4).toFixed(1);
+    const delay=(-Math.random()*rise).toFixed(1);
+    o.style.animation=`orbRise ${rise}s linear ${delay}s infinite, orbPulse ${pulse}s ease-in-out infinite`;
+    field.appendChild(o);
+  }
+}
+function _lighten(hex,amt){
+  hex=hex.replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  let r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+  r=Math.min(255,r+amt); g=Math.min(255,g+amt); b=Math.min(255,b+amt);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+window.addEventListener('load', buildLightsField);
+
+// ─── UTILS ───
+function gi(id){ return document.getElementById(id); }
+function sv(id,val){ const e=gi(id); if(e) e.value=val; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,type='ok'){ const t=gi('toast'); t.textContent=msg; t.className='show '+type; clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200); }
+</script>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  ภาคผนวก (APPENDIX) — สำหรับระบบ CONFIG GENERATOR ในอนาคต        ║
+     ║  เครื่องหมายมาตรฐาน (machine-readable markers):                   ║
+     ║    <!-- ==KRUNON-APPENDIX:{TYPE}:START== -->  ...  :END==        ║
+     ║  TYPE ที่มี: META · FIREBASE_RULES · STORAGE_RULES · GAS         ║
+     ║  เนื้อหาอยู่ใน <script type="text/plain" data-krunon-appendix>    ║
+     ║  อ่านง่ายด้วย: querySelectorAll('[data-krunon-appendix]')        ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+
+<!-- ==KRUNON-APPENDIX:META:START== -->
+<script type="application/json" data-krunon-appendix="meta" id="krunon-appendix-meta">
+{
+  "app": "ห้องเรียนครูนนท์",
+  "version": "1.2.0",
+  "firestore": { "collection": "linktree", "doc": "config" },
+  "firebase": {
+    "projectId": "krunonclassroom",
+    "storageBucket": "krunonclassroom.firebasestorage.app",
+    "authDomain": "krunonclassroom.firebaseapp.com"
+  },
+  "storeKeys": ["password", "activeProfile", "gasEndpoint", "driveFolderId", "profiles"],
+  "profileKeys": ["name", "title", "subtitle", "footer", "developer", "logoUrl", "bgImage", "bgOpacity", "accent1", "accent2", "bgColor", "textColor", "links", "announcements"],
+  "linkKeys": ["label", "url", "imgUrl", "copyText", "clicks"],
+  "uploadMethod": "GAS_DRIVE_NOCORS_POLL",
+  "defaultPassword": "1234",
+  "configurable": {
+    "gasEndpoint": "GAS Web App URL (/exec) — ใส่ในแผงจัดการ หรือฉีดผ่าน config generator",
+    "driveFolderId": "Google Drive Folder ID ปลายทางของไฟล์อัปโหลด"
+  }
+}
+</script>
+<!-- ==KRUNON-APPENDIX:META:END== -->
+
+
+<!-- ==KRUNON-APPENDIX:FIREBASE_RULES:START== -->
+<script type="text/plain" data-krunon-appendix="firebase_rules" data-filename="firestore.rules" id="krunon-appendix-firebase-rules">
+/* ============================================================
+ *  Firestore Security Rules — "ห้องเรียนครูนนท์"
+ *  วางใน Firebase Console → Firestore Database → Rules → Publish
+ *
+ *  หมายเหตุความปลอดภัย:
+ *    แอปนี้ใช้รหัสผ่านฝั่งหน้าเว็บ (client-side) ไม่ได้ใช้ Firebase Auth
+ *    จึงไม่สามารถจำกัด "การเขียน" ด้วย request.auth ได้
+ *    ทางเลือกตามระดับความปลอดภัย — เลือกใช้ "หนึ่งชุด" เท่านั้น:
+ * ============================================================ */
+
+/* ── ชุด A: ใช้งานง่าย (อ่านได้ทุกคน / เขียนได้เฉพาะ linktree) ──
+ *  เหมาะกับการใช้งานจริงทั่วไป — เว็บใช้ PIN ฝั่งหน้าเว็บคุมการแก้ไข
+ *  (ไม่มี Firebase Auth) จึงเปิดเขียนสาธารณะที่ collection linktree */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // อ่านได้ทุกคน (เว็บห้องเรียนแสดงให้นักเรียน/ผู้เกี่ยวข้องดูได้)
+    match /{document=**} { allow read: if true; }
+    // เขียนได้เฉพาะเอกสารของระบบห้องเรียนครูนนท์
+    // (เว็บใช้ PIN ฝั่งหน้าเว็บคุมการแก้ไข — ไม่มี Firebase Auth)
+    match /linktree/{id} { allow write: if true; }  // ข้อมูลเว็บห้องเรียน (config)
+  }
+}
+
+/* ── ชุด B: ทดสอบชั่วคราว (เปิดหมด มีวันหมดอายุ) ──
+ *  ★ ใช้เฉพาะตอนทดสอบ แล้วเปลี่ยนกลับเป็นชุด A ★
+ *  แก้วันที่ให้เป็นอนาคตอันใกล้
+ *
+ *  rules_version = '2';
+ *  service cloud.firestore {
+ *    match /databases/{database}/documents {
+ *      match /{document=**} {
+ *        allow read, write: if request.time < timestamp.date(2026, 12, 31);
+ *      }
+ *    }
+ *  }
+ */
+
+/* ── ชุด C: ปลอดภัยสูงสุด (ต้องล็อกอินด้วย Firebase Auth) ──
+ *  ต้องเพิ่มระบบ Firebase Authentication ในแอปก่อนจึงใช้ได้
+ *
+ *  rules_version = '2';
+ *  service cloud.firestore {
+ *    match /databases/{database}/documents {
+ *      match /linktree/config {
+ *        allow read: if true;                 // ใครก็เปิดดูหน้าเว็บได้
+ *        allow write: if request.auth != null; // เขียนได้เฉพาะที่ล็อกอิน
+ *      }
+ *    }
+ *  }
+ */
+</script>
+<!-- ==KRUNON-APPENDIX:FIREBASE_RULES:END== -->
+
+
+<!-- ==KRUNON-APPENDIX:STORAGE_RULES:START== -->
+<script type="text/plain" data-krunon-appendix="storage_rules" data-filename="storage.rules" id="krunon-appendix-storage-rules">
+/* ============================================================
+ *  Cloud Storage Rules (สำรอง) — ใช้เฉพาะกรณีอัปโหลดผ่าน Firebase Storage
+ *  แอปเวอร์ชันนี้อัปโหลดรูปผ่าน Google Apps Script → Google Drive แทน
+ *  จึง "ไม่จำเป็น" ต้องตั้ง Storage Rules — เก็บไว้เผื่อสลับไปใช้ Storage
+ *  วางใน Firebase Console → Storage → Rules
+ * ============================================================ */
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /logos/{fileName} {
+      allow read: if true;
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+</script>
+<!-- ==KRUNON-APPENDIX:STORAGE_RULES:END== -->
+
+
+<!-- ==KRUNON-APPENDIX:GAS:START== -->
+<script type="text/plain" data-krunon-appendix="gas" data-filename="Code.gs" id="krunon-appendix-gas">
+/**
+ * ============================================================
+ *  Google Apps Script — Drive Image Uploader
+ *  สำหรับเว็บแอป "ห้องเรียนครูนนท์" (อัปโหลดรูปจากเครื่อง → Google Drive)
+ *
+ *  รูปแบบการทำงาน (no-cors + key + poll):
+ *    1) เว็บ POST รูป base64 + key (no-cors) → GAS อัปขึ้น Drive,
+ *       เก็บลิงก์ไว้ใน CacheService อ้างด้วย key
+ *    2) เว็บ GET ?key=... ซ้ำๆ → GAS คืนลิงก์จาก cache (JSON)
+ *
+ *  ★★★ ขั้นตอนติดตั้ง (ทำตามลำดับ) ★★★
+ *    1) เปิด script.google.com → New project → วางโค้ดนี้แทนทั้งหมดใน Code.gs
+ *    2) แก้ DEFAULT_FOLDER_ID ด้านล่างให้เป็นโฟลเดอร์ของคุณ (หรือเว้นว่าง = My Drive)
+ *    3) อนุญาตสิทธิ์ Drive ครั้งเดียว: เลือกฟังก์ชัน "authorizeOnce" → กด Run (▶)
+ *       → Review permissions → เลือกบัญชี → Advanced → Go to project (unsafe) → Allow
+ *    4) Deploy → New deployment → Web app
+ *         - Execute as: Me  (สำคัญมาก — ห้ามเลือก "User accessing the web app")
+ *         - Who has access: Anyone
+ *    5) คัดลอก Web app URL (/exec) → วางในเว็บ: แผงจัดการ → ตั้งค่าอัปโหลดรูป → GAS Web App URL
+ *       และใส่ Folder ID ในช่องข้างกัน
+ *
+ *    แก้โค้ดภายหลัง: Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy
+ * ============================================================
+ */
+
+// ============================================================
+//  CONFIG — แก้ค่าตรงนี้ก่อน Deploy
+// ============================================================
+// Folder ID ของ Google Drive (จาก URL: drive.google.com/drive/folders/[ID])
+// ถ้าปล่อยว่าง จะใช้ My Drive root — แต่เว็บจะส่ง folderId มาทับให้อยู่แล้ว
+var DEFAULT_FOLDER_ID = "";
+
+// จำนวนวินาทีที่เก็บลิงก์ไว้ใน Cache (ต้องนานกว่า poll timeout ของเว็บ ~30s)
+var CACHE_EXPIRY_SEC = 120;
+
+// ============================================================
+//  authorizeOnce — รัน "ครั้งเดียว" ในเอดิเตอร์เพื่ออนุญาตสิทธิ์ Drive
+// ============================================================
+function authorizeOnce() {
+  var root = DriveApp.getRootFolder();
+  var folder = root;
+  try { if (DEFAULT_FOLDER_ID) folder = DriveApp.getFolderById(DEFAULT_FOLDER_ID); } catch (e) {}
+  var f = folder.createFile("krunon_authorize_test.txt", "ok", "text/plain");
+  var shareMsg = "OK";
+  try {
+    f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (se) {
+    shareMsg = "สร้างไฟล์ได้ แต่ตั้งแชร์สาธารณะไม่ได้ — ให้แชร์โฟลเดอร์ปลายทางเป็น Anyone with link เอง (" + se + ")";
+  }
+  f.setTrashed(true);
+  Logger.log("Drive authorized — folder: " + folder.getName() + " · sharing: " + shareMsg);
+  return shareMsg;
+}
+
+// ============================================================
+//  doPost — รับรูป base64 แล้วอัปขึ้น Drive
+// ============================================================
+function doPost(e) {
+  try {
+    var raw = e.postData ? e.postData.contents : "";
+    if (!raw) return makeResponse({ error: "ไม่มีข้อมูล" });
+
+    var payload  = JSON.parse(raw);
+    var key      = payload.key      || "";
+    var filename = payload.filename || ("upload_" + Date.now());
+    var mimeType = payload.mimeType || "application/octet-stream";
+    var b64data  = payload.data     || "";
+    var folderId = payload.folderId || DEFAULT_FOLDER_ID;
+
+    if (!key)     return makeResponse({ error: "ไม่มี key" });
+    if (!b64data) return makeResponse({ error: "ไม่มีข้อมูลไฟล์" });
+
+    var decoded = Utilities.base64Decode(b64data);
+    var blob    = Utilities.newBlob(decoded, mimeType, filename);
+
+    var folder;
+    try { folder = folderId ? DriveApp.getFolderById(folderId) : DriveApp.getRootFolder(); }
+    catch (folderErr) { Logger.log("Folder error: " + folderErr + " → ใช้ root"); folder = DriveApp.getRootFolder(); }
+
+    var file = folder.createFile(blob);
+
+    var shared = false;
+    try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); shared = true; }
+    catch (s1) {
+      try { file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW); shared = true; }
+      catch (s2) { Logger.log("setSharing ไม่สำเร็จ (ไฟล์ถูกสร้างแล้ว) — " + s2); }
+    }
+
+    var fileId = file.getId();
+    var mimeLC = mimeType.toLowerCase();
+    var publicUrl = (mimeLC.indexOf("image/") === 0)
+      ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w1600"
+      : "https://drive.google.com/file/d/" + fileId + "/view?usp=sharing";
+
+    var cache = CacheService.getScriptCache();
+    cache.put("upload_" + key, JSON.stringify({ url: publicUrl, id: fileId, shared: shared }), CACHE_EXPIRY_SEC);
+
+    Logger.log("อัปโหลดสำเร็จ: " + filename + " → " + publicUrl);
+    return makeResponse({ ok: true, id: fileId, url: publicUrl, shared: shared });
+
+  } catch (err) {
+    Logger.log("doPost error: " + err);
+    try {
+      var pl = JSON.parse(e.postData ? e.postData.contents : "{}");
+      if (pl.key) CacheService.getScriptCache().put("upload_" + pl.key, JSON.stringify({ error: err.toString() }), CACHE_EXPIRY_SEC);
+    } catch (_) {}
+    return makeResponse({ error: err.toString() });
+  }
+}
+
+// ============================================================
+//  doGet — poll ดึงผลด้วย key · ถ้าไม่มี key = ตรวจสุขภาพระบบ
+// ============================================================
+function doGet(e) {
+  try {
+    var key = e.parameter ? e.parameter.key : "";
+    if (!key) {
+      var report = { status: "ok", message: "GAS Drive Uploader พร้อมใช้งาน", timestamp: new Date().toISOString(), driveOk: false, identity: "", folder: "" };
+      try { report.identity = Session.getEffectiveUser().getEmail() || "(anonymous — ตั้ง Execute as: Me)"; }
+      catch (idErr) { report.identity = "(อ่านไม่ได้ — น่าจะตั้ง Execute as ผิด)"; }
+      try {
+        var f = DEFAULT_FOLDER_ID ? DriveApp.getFolderById(DEFAULT_FOLDER_ID) : DriveApp.getRootFolder();
+        report.folder = f.getName(); report.driveOk = true; report.message = "พร้อมใช้งาน · Drive เข้าถึงได้ ✓";
+      } catch (dErr) {
+        report.driveOk = false; report.driveError = dErr.toString();
+        report.message = "เข้าถึง Drive ไม่ได้ — รัน authorizeOnce แล้ว Deploy ใหม่ (Execute as: Me)";
+      }
+      return makeResponse(report);
+    }
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("upload_" + key);
+    if (!cached) return makeResponse({ pending: true });
+    cache.remove("upload_" + key);
+    return makeResponse(JSON.parse(cached));
+  } catch (err) {
+    Logger.log("doGet error: " + err);
+    return makeResponse({ error: err.toString() });
+  }
+}
+
+// ============================================================
+//  Helper — สร้าง JSON response
+// ============================================================
+function makeResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+</script>
+<!-- ==KRUNON-APPENDIX:GAS:END== -->
+
+</body>
+</html>
